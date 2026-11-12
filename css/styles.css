@@ -8,6 +8,10 @@
   --accent: #8c2f39;
   --accent-ink: #ffffff;
   --wood: #4a3022;
+  --plano-fondo: #f3ecdd;
+  --pasillo: #e8dcc3;
+  --sala-base: #fffaf0;
+  --muro: #4a3022;
   --shadow: 0 1px 2px rgba(43, 33, 24, 0.08), 0 8px 24px rgba(43, 33, 24, 0.08);
   --radius: 14px;
   --serif: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
@@ -25,6 +29,10 @@
     --accent: #d9737d;
     --accent-ink: #1a1512;
     --wood: #120e0b;
+    --plano-fondo: #1f1914;
+    --pasillo: #342a22;
+    --sala-base: #2a221c;
+    --muro: #c9b393;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 }
@@ -269,7 +277,6 @@ body {
 }
 
 .pestana:focus-visible,
-.pin:focus-visible,
 .lista-item:focus-visible,
 .boton:focus-visible {
   outline: 3px solid #e9a63a;
@@ -288,127 +295,110 @@ body {
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #f3ecdd;
-  padding: 10px;
+  background: var(--plano-fondo);
+  padding: 12px;
 }
 
 .lienzo {
-  position: relative;
   min-width: 680px;
-  max-width: 100%;
   margin: 0 auto;
 }
 
-.lienzo img {
+#plano {
   display: block;
   width: 100%;
   height: auto;
+  font-family: var(--sans);
   user-select: none;
-  -webkit-user-drag: none;
 }
 
-.pines {
-  position: absolute;
-  inset: 0;
+#plano .base {
+  fill: var(--pasillo);
+  stroke: var(--muro);
+  stroke-width: 3;
+  stroke-linejoin: round;
 }
 
-.pin {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  transform: translate(-50%, -50%);
-  border: 2px solid #fff;
-  border-radius: 50%;
-  background: var(--color);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+#plano .columna {
+  fill: var(--muro);
+}
+
+#plano .escalera path {
+  fill: url(#patron-escalera);
+  stroke: var(--muro);
+  stroke-width: 1.5;
+}
+
+#plano .escalera-linea {
+  stroke: var(--muro);
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+#plano .etiqueta-decor {
+  fill: var(--ink-soft);
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke: var(--pasillo);
+  stroke-width: 4px;
+  font-style: italic;
+}
+
+#plano .sala {
   cursor: pointer;
+  outline: none;
+}
+
+#plano .forma {
+  fill: color-mix(in srgb, var(--color) 16%, var(--sala-base));
+  stroke: var(--muro);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
   transition:
-    transform 0.15s ease,
+    fill 0.15s ease,
     opacity 0.2s ease;
 }
 
-.pin:hover,
-.pin:focus-visible {
-  transform: translate(-50%, -50%) scale(1.25);
-  z-index: 5;
+#plano .sala:hover .forma,
+#plano .sala:focus-visible .forma {
+  fill: color-mix(in srgb, var(--color) 34%, var(--sala-base));
 }
 
-.pin.atenuado {
-  opacity: 0.18;
+#plano .sala:focus-visible .forma {
+  stroke: var(--color);
+  stroke-width: 4;
 }
 
-.pin.coincide {
-  transform: translate(-50%, -50%) scale(1.2);
-  z-index: 4;
-}
-
-.pin.activo {
-  width: 24px;
-  height: 24px;
-  z-index: 6;
-  box-shadow:
-    0 0 0 3px var(--color),
-    0 2px 8px rgba(0, 0, 0, 0.5);
-}
-
-.pin.activo::after {
-  content: "";
-  position: absolute;
-  inset: -10px;
-  border-radius: 50%;
-  border: 2px solid var(--color);
-  animation: pulso 1.6s ease-out infinite;
-}
-
-@keyframes pulso {
-  from {
-    transform: scale(0.6);
-    opacity: 0.9;
-  }
-  to {
-    transform: scale(1.6);
-    opacity: 0;
-  }
-}
-
-.pin-etiqueta {
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 10px;
-  border-radius: 8px;
-  background: #2b2118;
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 600;
-  white-space: nowrap;
+#plano .etiqueta {
+  fill: var(--ink);
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: central;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.12s ease;
 }
 
-.pin:hover .pin-etiqueta,
-.pin:focus-visible .pin-etiqueta,
-.pin.activo .pin-etiqueta {
-  opacity: 1;
+#plano .sala.coincide .forma {
+  fill: color-mix(in srgb, var(--color) 40%, var(--sala-base));
+  stroke: var(--color);
+  stroke-width: 4;
 }
 
-.pin.abajo .pin-etiqueta {
-  bottom: auto;
-  top: calc(100% + 8px);
+#plano .sala.atenuada {
+  opacity: 0.3;
 }
 
-.pin.izq .pin-etiqueta {
-  left: 0;
-  transform: none;
+#plano .sala.activa .forma {
+  fill: color-mix(in srgb, var(--color) 55%, var(--sala-base));
+  stroke: var(--color);
+  stroke-width: 5;
+  animation: latido 1.8s ease-in-out infinite;
 }
 
-.pin.der .pin-etiqueta {
-  left: auto;
-  right: 0;
-  transform: none;
+@keyframes latido {
+  50% {
+    stroke-width: 8;
+  }
 }
 
 /* ---------- Leyenda ---------- */
@@ -589,13 +579,11 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pin,
-  .pin-etiqueta {
+  #plano .forma {
     transition: none;
   }
 
-  .pin.activo::after {
+  #plano .sala.activa .forma {
     animation: none;
-    opacity: 0.6;
   }
 }
