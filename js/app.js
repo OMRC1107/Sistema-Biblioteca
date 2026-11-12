@@ -81,6 +81,12 @@
     plano: $("plano"),
     lienzo: $("lienzo"),
     nota: $("nota"),
+    salaPanel: $("sala-panel"),
+    salaPunto: $("sala-punto"),
+    salaTitulo: $("sala-titulo"),
+    salaMeta: $("sala-meta"),
+    salaPlano: $("sala-plano"),
+    salaCerrar: $("sala-cerrar"),
     leyenda: $("leyenda"),
     detalle: $("detalle"),
     listaTitulo: $("lista-titulo"),
@@ -227,6 +233,53 @@
       : "";
   };
 
+  /* Plano individual de la sala seleccionada: solo se ve su interior. */
+  const renderSala = () => {
+    const sala = estado.seleccion ? buscarSala(estado.seleccion) : null;
+    ui.salaPanel.hidden = !sala;
+    if (!sala) {
+      ui.salaPlano.replaceChildren();
+      return;
+    }
+
+    const geo = PLANOS[sala.piso];
+    const color = colorDe(sala.tipo);
+    ui.salaPanel.style.setProperty("--color", color);
+    ui.salaPunto.style.setProperty("--color", color);
+    ui.salaTitulo.textContent = sala.nombre;
+    ui.salaMeta.textContent = [sala.pisoNombre, etiquetaDe(sala.tipo), sala.descripcion]
+      .filter(Boolean)
+      .join(" · ");
+    ui.salaPlano.setAttribute("aria-label", `Plano de ${sala.nombre}, ${sala.pisoNombre}`);
+
+    // Se mide la zona de la sala para encuadrarla (el panel ya está visible).
+    const medida = crearSvg("path", { d: sala.d });
+    ui.salaPlano.replaceChildren(medida);
+    const caja = medida.getBBox();
+    const margen = Math.max(14, Math.max(caja.width, caja.height) * 0.08);
+    ui.salaPlano.setAttribute(
+      "viewBox",
+      `${caja.x - margen} ${caja.y - margen} ${caja.width + margen * 2} ${caja.height + margen * 2}`
+    );
+
+    // La máscara engrosa un poco la zona para no cortar los muros del borde.
+    const mascara = crearSvg(
+      "mask",
+      { id: "mascara-sala", maskUnits: "userSpaceOnUse", x: -100, y: -100, width: 2000, height: 1000 },
+      crearSvg("path", { d: sala.d, fill: "#fff", stroke: "#fff", "stroke-width": 7, "stroke-linejoin": "round" })
+    );
+
+    const contenido = crearSvg(
+      "g",
+      { mask: "url(#mascara-sala)" },
+      crearSvg("path", { d: geo.piso, class: "piso", "fill-rule": "evenodd" }),
+      crearSvg("path", { d: sala.d, class: "sala-tinte" }),
+      crearSvg("path", { d: geo.muros, class: "muros", "fill-rule": "evenodd" })
+    );
+
+    ui.salaPlano.replaceChildren(crearSvg("defs", {}, mascara), contenido);
+  };
+
   const renderLista = () => {
     const piso = pisoActual();
     const delPiso = salas.filter((s) => s.piso === piso.id);
@@ -301,8 +354,8 @@
         crear("button", {
           class: "boton",
           type: "button",
-          text: "Ver en el plano",
-          onclick: () => $("lienzo").scrollIntoView({ behavior: "smooth", block: "center" }),
+          text: "Ver plano de la sala",
+          onclick: () => ui.salaPanel.scrollIntoView({ behavior: "smooth", block: "start" }),
         }),
         crear("button", {
           class: "boton",
@@ -367,6 +420,7 @@
     renderPlano();
     renderLista();
     renderDetalle();
+    renderSala();
     renderEstado();
   };
 
@@ -387,6 +441,10 @@
       history.replaceState(null, "", location.pathname + location.search);
     }
     renderTodo();
+    if (id && !ui.salaPanel.hidden) {
+      const reducir = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      ui.salaPanel.scrollIntoView({ behavior: reducir ? "auto" : "smooth", block: "start" });
+    }
   };
 
   const elegirResultado = (sala) => {
@@ -410,6 +468,8 @@
     renderTodo();
     renderResultados(true);
   });
+
+  ui.salaCerrar.addEventListener("click", () => seleccionar(null));
 
   ui.busqueda.addEventListener("focus", () => renderResultados(true));
   ui.busqueda.addEventListener("blur", () => renderResultados(false));

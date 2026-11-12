@@ -74,6 +74,20 @@
       </aside>
     </main>
 
+    <section id="sala-panel" class="sala-panel" aria-label="Plano de la sala seleccionada" hidden>
+      <div class="sala-cabecera">
+        <div class="sala-pestana">
+          <span id="sala-punto" class="punto"></span>
+          <h2 id="sala-titulo"></h2>
+          <button id="sala-cerrar" class="sala-cerrar" type="button" aria-label="Cerrar plano de la sala">×</button>
+        </div>
+        <p id="sala-meta" class="sala-meta"></p>
+      </div>
+      <div class="sala-lienzo">
+        <svg id="sala-plano" role="img" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </section>
+
     <footer class="pie">
       <p>Haz clic en una sala del plano o busca una sala por nombre, número o piso.</p>
     </footer>

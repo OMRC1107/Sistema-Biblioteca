@@ -10,7 +10,7 @@ Abre `index.html` en el navegador (no requiere instalación ni servidor).
 - Buscador por nombre, número, piso o categoría (atajo: `/`, navegación con flechas y Enter).
 - Planos vectoriales calcados de las imágenes de referencia, con sus proporciones reales.
   Los tres pisos comparten escala y posición; en los pisos 2 y 3 se muestra el contorno punteado del piso inferior.
-- Clic en una sala para ver su detalle. Enlace directo a una sala: `index.html#sala-8`.
+- Clic en una sala: se abre debajo una pestaña con el plano de esa sala sola, ampliado, y su detalle. Enlace directo a una sala: `index.html#sala-8`.
 
 ## Estructura
 
