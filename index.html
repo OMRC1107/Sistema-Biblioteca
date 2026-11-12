@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sistema de Biblioteca · Mapa de salas</title>
+    <meta
+      name="description"
+      content="Visor de los tres pisos de la biblioteca con búsqueda de salas."
+    />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="marca">
+        <svg class="marca-icono" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5v-17zM6.5 4a.5.5 0 0 0-.5.5V17.2a4.5 4.5 0 0 1 .5-.03H18V4H6.5z"
+            fill="currentColor"
+          />
+        </svg>
+        <div>
+          <h1>Sistema de Biblioteca</h1>
+          <p>Mapa de pisos y salas</p>
+        </div>
+      </div>
+
+      <div class="buscador">
+        <label for="busqueda" class="sr-only">Buscar sala</label>
+        <svg class="buscador-icono" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M10 2a8 8 0 1 0 4.9 14.3l5.4 5.4 1.4-1.4-5.4-5.4A8 8 0 0 0 10 2zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12z"
+            fill="currentColor"
+          />
+        </svg>
+        <input
+          id="busqueda"
+          type="search"
+          placeholder="Buscar sala…  (pulsa / para enfocar)"
+          autocomplete="off"
+          role="combobox"
+          aria-expanded="false"
+          aria-controls="resultados"
+          aria-autocomplete="list"
+        />
+        <ul id="resultados" class="resultados" role="listbox" hidden></ul>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="visor" aria-label="Plano de la biblioteca">
+        <div class="visor-cabecera">
+          <div id="pestanas" class="pestanas" role="tablist" aria-label="Pisos"></div>
+          <p id="estado" class="estado" aria-live="polite"></p>
+        </div>
+
+        <div class="plano-marco">
+          <div class="lienzo" id="lienzo">
+            <img id="plano" alt="" />
+            <div id="pines" class="pines"></div>
+          </div>
+        </div>
+
+        <ul id="leyenda" class="leyenda" aria-label="Leyenda de categorías"></ul>
+      </section>
+
+      <aside class="panel" aria-label="Información de salas">
+        <article id="detalle" class="tarjeta detalle" aria-live="polite"></article>
+
+        <section class="tarjeta">
+          <h2 id="lista-titulo" class="lista-titulo"></h2>
+          <ul id="lista" class="lista"></ul>
+        </section>
+      </aside>
+    </main>
+
+    <footer class="pie">
+      <p>Haz clic en un marcador del plano o busca una sala por nombre, número o piso.</p>
+    </footer>
+
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
