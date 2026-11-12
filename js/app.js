@@ -80,6 +80,7 @@
     estado: $("estado"),
     plano: $("plano"),
     lienzo: $("lienzo"),
+    nota: $("nota"),
     leyenda: $("leyenda"),
     detalle: $("detalle"),
     listaTitulo: $("lista-titulo"),
@@ -142,92 +143,88 @@
 
   const renderPlano = () => {
     const piso = pisoActual();
+    const geo = PLANOS[piso.id];
     const svg = ui.plano;
-    svg.setAttribute("viewBox", `0 0 ${piso.ancho} ${piso.alto}`);
+    svg.setAttribute("viewBox", `${VISTA.x} ${VISTA.y} ${VISTA.ancho} ${VISTA.alto}`);
     svg.setAttribute("aria-label", `Plano del ${piso.nombre} de la biblioteca`);
-    ui.lienzo.style.maxWidth = `${piso.anchoMax}px`;
 
-    const defs = crearSvg(
-      "defs",
-      {},
-      crearSvg(
-        "pattern",
-        { id: "patron-escalera", width: 8, height: 8, patternUnits: "userSpaceOnUse" },
-        crearSvg("path", { d: "M0 8 L8 0", class: "escalera-linea" })
-      )
+    const capas = [];
+
+    // Contorno del piso inferior (referencia de cómo se apilan los pisos).
+    const inferior = PLANOS[piso.id - 1];
+    if (inferior) {
+      capas.push(crearSvg("path", { d: inferior.silueta, class: "fantasma" }));
+    }
+
+    capas.push(
+      crearSvg("path", { d: geo.exterior, class: "exterior", "fill-rule": "evenodd" }),
+      crearSvg("path", { d: geo.piso, class: "piso", "fill-rule": "evenodd" })
     );
 
-    const base = crearSvg("path", { d: piso.base, class: "base" });
-
-    const decor = piso.decor.map((el) => {
-      if (el.tipo === "columna") return crearSvg("path", { d: el.d, class: "columna" });
-      const g = crearSvg("g", { class: "escalera" }, crearSvg("path", { d: el.d }));
-      if (el.etiqueta) {
-        g.append(
-          crearSvg("text", {
-            x: el.c[0],
-            y: el.c[1],
-            class: "etiqueta-decor",
-            "font-size": piso.fuente - 3,
-            text: el.etiqueta,
-          })
-        );
-      }
-      return g;
-    });
-
-    const zonas = piso.salas.map((datos) => {
+    const etiquetas = [];
+    for (const datos of piso.salas) {
       const sala = buscarSala(normalizar(datos.nombre).replace(/[^a-z0-9]+/g, "-"));
       const activo = estado.seleccion === sala.id;
       const coincide = Boolean(estado.consulta) && coincideConConsulta(sala);
       const atenuado = Boolean(estado.consulta) && !coincide;
 
-      const clases = ["sala"];
-      if (activo) clases.push("activa");
-      if (coincide) clases.push("coincide");
-      if (atenuado) clases.push("atenuada");
+      const estados = [];
+      if (activo) estados.push("activa");
+      if (coincide) estados.push("coincide");
+      if (atenuado) estados.push("atenuada");
+      const estilo = `--color:${colorDe(sala.tipo)}`;
 
-      const fuente = datos.fuente || piso.fuente;
-      const lineas = datos.lineas || [datos.nombre];
-      const alto = fuente * 1.2;
-      const y0 = datos.c[1] - ((lineas.length - 1) * alto) / 2;
-
-      const texto = crearSvg(
-        "text",
-        { x: datos.c[0], y: y0, class: "etiqueta", "font-size": fuente },
-        ...lineas.map((linea, i) =>
-          crearSvg("tspan", { x: datos.c[0], dy: i === 0 ? 0 : alto, text: linea })
+      capas.push(
+        crearSvg(
+          "g",
+          {
+            class: ["sala", ...estados].join(" "),
+            style: estilo,
+            role: "button",
+            tabindex: "0",
+            "aria-label": `${sala.nombre}, ${sala.pisoNombre}`,
+            "aria-pressed": String(activo),
+            onclick: () => seleccionar(sala.id),
+            onkeydown: (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                seleccionar(sala.id);
+              }
+            },
+          },
+          crearSvg("title", { text: `${sala.nombre} · ${etiquetaDe(sala.tipo)}` }),
+          crearSvg("path", { d: datos.d, class: "forma" })
         )
       );
 
-      const g = crearSvg(
-        "g",
-        {
-          class: clases.join(" "),
-          style: `--color:${colorDe(sala.tipo)}`,
-          role: "button",
-          tabindex: "0",
-          "aria-label": `${sala.nombre}, ${sala.pisoNombre}`,
-          "aria-pressed": String(activo),
-          onclick: () => seleccionar(sala.id),
-          onkeydown: (e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              seleccionar(sala.id);
-            }
+      const fuente = datos.fuente || FUENTE_BASE;
+      const lineas = datos.lineas || [datos.nombre];
+      const alto = fuente * 1.2;
+      const y0 = datos.c[1] - ((lineas.length - 1) * alto) / 2;
+      etiquetas.push(
+        crearSvg(
+          "text",
+          {
+            x: datos.c[0],
+            y: y0,
+            class: ["etiqueta", ...estados].join(" "),
+            style: estilo,
+            "font-size": fuente,
           },
-        },
-        crearSvg("title", { text: `${sala.nombre} · ${etiquetaDe(sala.tipo)}` }),
-        crearSvg("path", { d: datos.d, class: "forma" }),
-        texto
+          ...lineas.map((linea, i) =>
+            crearSvg("tspan", { x: datos.c[0], dy: i === 0 ? 0 : alto, text: linea })
+          )
+        )
       );
-      return g;
-    });
+    }
 
-    // La sala activa se dibuja al final para que su borde quede por encima.
-    zonas.sort((a, b) => a.classList.contains("activa") - b.classList.contains("activa"));
+    // Los muros van sobre las zonas; no capturan clics.
+    capas.push(crearSvg("path", { d: geo.muros, class: "muros", "fill-rule": "evenodd" }), ...etiquetas);
 
-    svg.replaceChildren(defs, base, ...decor, ...zonas);
+    svg.replaceChildren(...capas);
+    ui.nota.textContent = inferior
+      ? `La línea punteada es el contorno del Piso ${piso.id - 1}, a la misma escala y posición.`
+      : "";
   };
 
   const renderLista = () => {

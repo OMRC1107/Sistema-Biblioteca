@@ -1,12 +1,16 @@
 /*
- * Datos de los pisos y salas, con la geometría de los planos.
+ * Datos de pisos y salas.
  *
- * Cada piso se dibuja como SVG dentro de un viewBox de `ancho` x `alto`.
- *   base:  silueta general del piso (zonas de circulación).
- *   decor: elementos decorativos (escaleras, columnas).
- *   salas: zonas clicables. `d` es el trazado SVG de la sala y `c` el
- *          centro donde se escribe su nombre. `lineas` parte el nombre en
- *          varias líneas y `fuente` ajusta el tamaño del texto.
+ * La geometría del edificio (muros, piso, exterior) está en js/planos.js,
+ * generado desde las imágenes de referencia con tools/generar_planos.py.
+ * Aquí se definen las zonas clicables de cada sala, medidas sobre ese mismo
+ * sistema de coordenadas (píxeles de la imagen original), por eso los tres
+ * pisos quedan alineados entre sí.
+ *
+ *   d:       trazado SVG de la zona de la sala.
+ *   c:       punto donde se escribe el nombre en el plano.
+ *   lineas:  (opcional) parte el nombre en varias líneas dentro del plano.
+ *   fuente:  (opcional) tamaño del texto en el plano.
  */
 
 const CATEGORIAS = {
@@ -19,93 +23,86 @@ const CATEGORIAS = {
   lúdico: { etiqueta: "Lúdico y cultural", color: "#4c8a3c" },
 };
 
+const FUENTE_BASE = 13;
+
 // Rectángulo como trazado SVG.
 const R = (x, y, w, h) => `M${x} ${y}h${w}v${h}h${-w}Z`;
-// Centro de un rectángulo.
-const C = (x, y, w, h) => [x + w / 2, y + h / 2];
-
-// Fila de columnas pequeñas (muro del ingreso).
-const columnas = (xs, y) => xs.map((x) => ({ tipo: "columna", d: R(x - 4, y, 8, 16) }));
 
 const PISOS = [
   /* ===================== PISO 1 ===================== */
   {
     id: 1,
     nombre: "Piso 1",
-    ancho: 1209,
-    alto: 323,
-    anchoMax: 1180,
-    fuente: 14,
-    base: "M10 125 H670 V50 H985 V318 H10 Z",
-    decor: [
-      ...columnas([381, 412, 445, 510, 543, 575, 607, 640], 117),
-      { tipo: "escalera", d: R(775, 185, 70, 100), etiqueta: "Escaleras", c: C(775, 185, 70, 100) },
-    ],
     salas: [
       {
         nombre: "Sala 8",
         tipo: "sala",
-        d: "M190 125 H70 Q10 135 10 195 V260 H190 Z",
-        c: [100, 195],
+        d: "M43 200C43 180 60 167 82 167H203V290H43Z",
+        c: [125, 232],
       },
-      { nombre: "Sala 7", tipo: "sala", d: R(190, 200, 85, 95), c: C(190, 200, 85, 95) },
+      { nombre: "Sala 7", tipo: "sala", d: R(225, 212, 107, 110), c: [279, 268] },
       {
         nombre: "Sala de investigación A",
         tipo: "investigacion",
-        d: R(275, 200, 90, 100),
-        c: C(275, 200, 90, 100),
-        lineas: ["Sala de", "investigación", "A"],
-        fuente: 12,
+        d: R(370, 248, 38, 75),
+        c: [389, 285],
+        lineas: ["Inv.", "A"],
+        fuente: 11,
         descripcion: "Espacio para trabajo de investigación.",
       },
       {
         nombre: "Sala de investigación B",
         tipo: "investigacion",
-        d: R(365, 200, 90, 100),
-        c: C(365, 200, 90, 100),
-        lineas: ["Sala de", "investigación", "B"],
-        fuente: 12,
+        d: R(411, 248, 37, 75),
+        c: [430, 285],
+        lineas: ["Inv.", "B"],
+        fuente: 11,
         descripcion: "Espacio para trabajo de investigación.",
       },
-      { nombre: "Sala 6", tipo: "sala", d: R(455, 240, 55, 75), c: C(455, 240, 55, 75) },
-      { nombre: "Sala 5", tipo: "sala", d: R(510, 215, 55, 100), c: C(510, 215, 55, 100) },
-      { nombre: "Sala 4", tipo: "sala", d: R(565, 215, 55, 100), c: C(565, 215, 55, 100) },
-      { nombre: "Sala 3", tipo: "sala", d: R(620, 215, 55, 100), c: C(620, 215, 55, 100) },
+      { nombre: "Sala 6", tipo: "sala", d: R(457, 292, 58, 58), c: [486, 323] },
+      { nombre: "Sala 5", tipo: "sala", d: R(524, 272, 54, 78), c: [551, 312] },
+      { nombre: "Sala 4", tipo: "sala", d: R(580, 250, 60, 100), c: [610, 312] },
+      { nombre: "Sala 3", tipo: "sala", d: R(642, 250, 58, 100), c: [671, 312] },
       {
         nombre: "Ingreso",
         tipo: "servicio",
-        d: R(190, 125, 480, 75),
-        c: [430, 168],
+        d: "M225 177H690V250H448V248H335V212H225Z",
+        c: [509, 197],
         descripcion: "Acceso principal a la biblioteca.",
       },
       {
         nombre: "Devoluciones",
         tipo: "servicio",
-        d: "M415 125 V75 Q415 50 440 50 H520 Q545 50 545 75 V125 Z",
-        c: [480, 98],
+        d: R(450, 92, 122, 55),
+        c: [511, 122],
         descripcion: "Punto de devolución de material bibliográfico.",
       },
       {
         nombre: "Cafetería",
         tipo: "servicio",
-        d: R(680, 190, 90, 125),
-        c: C(680, 190, 90, 125),
+        d: R(704, 245, 88, 110),
+        c: [748, 278],
         descripcion: "Zona de cafetería.",
       },
-      { nombre: "Sala 2", tipo: "sala", d: R(670, 55, 100, 125), c: C(670, 55, 100, 125) },
+      { nombre: "Sala 2", tipo: "sala", d: R(692, 96, 88, 119), c: [737, 150] },
       {
         nombre: "Sala TIC",
         tipo: "tecnologia",
-        d: R(775, 105, 70, 75),
-        c: C(775, 105, 70, 75),
+        d: R(838, 93, 93, 83),
+        c: [885, 135],
         descripcion: "Sala de tecnologías de la información y la comunicación.",
       },
-      { nombre: "Sala 1", tipo: "sala", d: R(850, 55, 135, 225), c: C(850, 55, 135, 225) },
+      {
+        nombre: "Sala 1",
+        tipo: "sala",
+        d: "M838 177H931V112H1018V232H963V316H838Z",
+        c: [895, 240],
+      },
       {
         nombre: "Auditorio",
         tipo: "eventos",
-        d: "M990 95 H1195 V285 Q1092 322 990 285 Z",
-        c: [1092, 190],
+        d: "M1018 140H1216V300H1186Q1117 335 1048 300H1018Z",
+        c: [1117, 215],
         descripcion: "Espacio para eventos, charlas y conferencias.",
       },
     ],
@@ -115,87 +112,84 @@ const PISOS = [
   {
     id: 2,
     nombre: "Piso 2",
-    ancho: 1279,
-    alto: 381,
-    anchoMax: 1180,
-    fuente: 14,
-    base: "M45 170 H210 V150 H695 V100 H1245 V335 H45 Z",
-    decor: [
-      ...columnas([420, 455, 490, 525, 560, 595, 630, 665], 142),
-      { tipo: "escalera", d: R(790, 170, 55, 70), etiqueta: "Escaleras", c: C(790, 170, 55, 70) },
-    ],
     salas: [
       {
         nombre: "Sala Tribal",
         tipo: "lúdico",
-        d: "M210 170 H100 Q45 185 45 235 V300 H210 Z",
-        c: [128, 237],
+        d: "M45 200C45 180 62 166 82 166H205V292H45Z",
+        c: [125, 235],
       },
       {
         nombre: "Sala de cómputo",
         tipo: "tecnologia",
-        d: R(210, 180, 140, 145),
-        c: C(210, 180, 140, 145),
+        d: R(228, 173, 110, 148),
+        c: [283, 250],
         lineas: ["Sala de", "cómputo"],
         descripcion: "Sala con equipos de cómputo.",
       },
       {
         nombre: "Ludoteca",
         tipo: "lúdico",
-        d: R(365, 225, 105, 95),
-        c: C(365, 225, 105, 95),
+        d: R(365, 249, 92, 63),
+        c: [411, 282],
         descripcion: "Espacio lúdico.",
       },
       {
         nombre: "Procesos técnicos",
         tipo: "administrativo",
-        d: R(470, 240, 110, 80),
-        c: C(470, 240, 110, 80),
+        d: R(473, 270, 102, 42),
+        c: [524, 291],
         lineas: ["Procesos", "técnicos"],
+        fuente: 11,
         descripcion: "Área de procesamiento técnico del material bibliográfico.",
       },
-      { nombre: "Sala 13", tipo: "sala", d: R(580, 265, 65, 60), c: C(580, 265, 65, 60) },
+      { nombre: "Sala 13", tipo: "sala", d: R(578, 283, 62, 47), c: [609, 307] },
       {
         nombre: "Jefatura",
         tipo: "administrativo",
-        d: R(645, 290, 60, 45),
-        c: C(645, 290, 60, 45),
-        fuente: 12,
+        d: R(642, 246, 62, 74),
+        c: [673, 290],
+        fuente: 11,
         descripcion: "Oficina de jefatura.",
       },
       {
         nombre: "Secretaría",
         tipo: "administrativo",
-        d: R(705, 245, 90, 90),
-        c: C(705, 245, 90, 90),
+        d: R(706, 246, 88, 74),
+        c: [750, 290],
         descripcion: "Oficina de secretaría.",
       },
-      { nombre: "Sala 12", tipo: "sala", d: R(695, 100, 90, 125), c: C(695, 100, 90, 125) },
-      { nombre: "Sala 11", tipo: "sala", d: R(850, 100, 90, 220), c: C(850, 100, 90, 220) },
+      { nombre: "Sala 12", tipo: "sala", d: R(694, 96, 90, 119), c: [738, 155] },
+      { nombre: "Sala 11", tipo: "sala", d: R(846, 96, 88, 222), c: [890, 200] },
       {
         nombre: "Sala de semilleros A",
         tipo: "investigacion",
-        d: R(940, 225, 110, 50),
-        c: C(940, 225, 110, 50),
-        lineas: ["Sala de", "semilleros A"],
-        fuente: 12,
+        d: R(938, 236, 82, 42),
+        c: [979, 257],
+        lineas: ["Semilleros", "A"],
+        fuente: 11,
         descripcion: "Espacio para semilleros de investigación.",
       },
       {
         nombre: "Sala de semilleros B",
         tipo: "investigacion",
-        d: R(940, 275, 110, 45),
-        c: C(940, 275, 110, 45),
-        lineas: ["Sala de", "semilleros B"],
-        fuente: 12,
+        d: R(938, 280, 82, 38),
+        c: [979, 299],
+        lineas: ["Semilleros", "B"],
+        fuente: 11,
         descripcion: "Espacio para semilleros de investigación.",
       },
-      { nombre: "Sala 10", tipo: "sala", d: R(1050, 235, 95, 95), c: C(1050, 235, 95, 95) },
+      {
+        nombre: "Sala 10",
+        tipo: "sala",
+        d: "M1026 222H1145V274H1111V300H1026Z",
+        c: [1075, 258],
+      },
       {
         nombre: "Sala 9",
         tipo: "sala",
-        d: "M940 120 H1240 V310 H1190 V235 H1050 V225 H940 Z",
-        c: [1090, 172],
+        d: "M1022 135H1217V228H1240V303H1146V222H1022Z",
+        c: [1128, 172],
       },
     ],
   },
@@ -204,18 +198,12 @@ const PISOS = [
   {
     id: 3,
     nombre: "Piso 3",
-    ancho: 374,
-    alto: 294,
-    anchoMax: 560,
-    fuente: 11,
-    base: "M30 140 H130 V110 H275 V75 H370 V245 H345 V270 H30 Z",
-    decor: [],
     salas: [
       {
         nombre: "Sala 14",
         tipo: "sala",
-        d: "M50 150 H130 V122 H285 V90 H355 V225 H335 V255 H265 V230 H220 V255 H50 Z",
-        c: [215, 175],
+        d: "M935 199H1020V172H1169V137H1243V235H1224V308H1146V276H1104V305H935Z",
+        c: [1085, 240],
       },
     ],
   },

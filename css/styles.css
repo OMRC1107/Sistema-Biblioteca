@@ -8,10 +8,11 @@
   --accent: #8c2f39;
   --accent-ink: #ffffff;
   --wood: #4a3022;
-  --plano-fondo: #f3ecdd;
-  --pasillo: #e8dcc3;
-  --sala-base: #fffaf0;
-  --muro: #4a3022;
+  --plano-fondo: #fffdf9;
+  --pasillo: #efe9e1;
+  --exterior: #e9edf0;
+  --muro: #111827;
+  --halo: #fffdf9;
   --shadow: 0 1px 2px rgba(43, 33, 24, 0.08), 0 8px 24px rgba(43, 33, 24, 0.08);
   --radius: 14px;
   --serif: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
@@ -31,8 +32,9 @@
     --wood: #120e0b;
     --plano-fondo: #1f1914;
     --pasillo: #342a22;
-    --sala-base: #2a221c;
-    --muro: #c9b393;
+    --exterior: #2b2f33;
+    --muro: #d8c6a8;
+    --halo: #1f1914;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 }
@@ -296,11 +298,11 @@ body {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--plano-fondo);
-  padding: 12px;
+  padding: 10px;
 }
 
 .lienzo {
-  min-width: 680px;
+  min-width: 760px;
   margin: 0 auto;
 }
 
@@ -312,37 +314,28 @@ body {
   user-select: none;
 }
 
-#plano .base {
+#plano .exterior {
+  fill: var(--exterior);
+}
+
+#plano .piso {
   fill: var(--pasillo);
-  stroke: var(--muro);
-  stroke-width: 3;
-  stroke-linejoin: round;
 }
 
-#plano .columna {
-  fill: var(--muro);
-}
-
-#plano .escalera path {
-  fill: url(#patron-escalera);
+#plano .fantasma {
+  fill: none;
   stroke: var(--muro);
   stroke-width: 1.5;
-}
-
-#plano .escalera-linea {
-  stroke: var(--muro);
-  stroke-width: 1;
+  stroke-dasharray: 6 5;
   opacity: 0.5;
 }
 
-#plano .etiqueta-decor {
-  fill: var(--ink-soft);
-  text-anchor: middle;
-  dominant-baseline: central;
-  paint-order: stroke;
-  stroke: var(--pasillo);
-  stroke-width: 4px;
-  font-style: italic;
+#plano .muros {
+  fill: var(--muro);
+  stroke: var(--muro);
+  stroke-width: 0.7;
+  stroke-linejoin: round;
+  pointer-events: none;
 }
 
 #plano .sala {
@@ -351,10 +344,8 @@ body {
 }
 
 #plano .forma {
-  fill: color-mix(in srgb, var(--color) 16%, var(--sala-base));
-  stroke: var(--muro);
-  stroke-width: 2.5;
-  stroke-linejoin: round;
+  fill: color-mix(in srgb, var(--color) 14%, transparent);
+  stroke: none;
   transition:
     fill 0.15s ease,
     opacity 0.2s ease;
@@ -362,12 +353,12 @@ body {
 
 #plano .sala:hover .forma,
 #plano .sala:focus-visible .forma {
-  fill: color-mix(in srgb, var(--color) 34%, var(--sala-base));
+  fill: color-mix(in srgb, var(--color) 32%, transparent);
 }
 
 #plano .sala:focus-visible .forma {
   stroke: var(--color);
-  stroke-width: 4;
+  stroke-width: 3;
 }
 
 #plano .etiqueta {
@@ -375,30 +366,44 @@ body {
   font-weight: 700;
   text-anchor: middle;
   dominant-baseline: central;
+  paint-order: stroke;
+  stroke: var(--halo);
+  stroke-width: 3.5px;
+  stroke-linejoin: round;
   pointer-events: none;
+  transition: opacity 0.2s ease;
 }
 
 #plano .sala.coincide .forma {
-  fill: color-mix(in srgb, var(--color) 40%, var(--sala-base));
+  fill: color-mix(in srgb, var(--color) 38%, transparent);
   stroke: var(--color);
-  stroke-width: 4;
+  stroke-width: 3;
 }
 
-#plano .sala.atenuada {
+#plano .sala.atenuada,
+#plano .etiqueta.atenuada {
   opacity: 0.3;
 }
 
 #plano .sala.activa .forma {
-  fill: color-mix(in srgb, var(--color) 55%, var(--sala-base));
+  fill: color-mix(in srgb, var(--color) 50%, transparent);
   stroke: var(--color);
-  stroke-width: 5;
+  stroke-width: 4;
   animation: latido 1.8s ease-in-out infinite;
 }
 
 @keyframes latido {
   50% {
-    stroke-width: 8;
+    stroke-width: 7;
   }
+}
+
+.nota {
+  margin: 8px 0 0;
+  min-height: 1em;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  text-align: center;
 }
 
 /* ---------- Leyenda ---------- */
