@@ -10,7 +10,8 @@ Abre `index.html` en el navegador (no requiere instalación ni servidor).
 - Buscador por nombre, número, piso o categoría (atajo: `/`, navegación con flechas y Enter).
 - Planos vectoriales calcados de las imágenes de referencia, con sus proporciones reales.
   Los tres pisos comparten escala y posición; en los pisos 2 y 3 se muestra el contorno punteado del piso inferior.
-- Clic en una sala: se abre debajo una pestaña con el plano de esa sala sola, ampliado, y su detalle. Enlace directo a una sala: `index.html#sala-8`.
+- Clic en una sala: se abre debajo una pestaña con el plano de esa sala sola, ampliado, y su detalle.
+  En las Salas 1 a 14 el plano incluye mesas hexagonales de 6 puestos (mínimo 4, se acomodan solas según el espacio). Las demás áreas (investigación, cafetería, TIC, auditorio, cómputo, tribal, ludoteca, procesos técnicos, jefatura, secretaría, semilleros, ingreso y devoluciones) no llevan mesas; para activarlas en una sala basta añadir `mesas: true` en `js/data.js`. Enlace directo a una sala: `index.html#sala-8`.
 
 ## Estructura
 

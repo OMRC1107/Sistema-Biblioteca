@@ -11,6 +11,10 @@
  *   c:       punto donde se escribe el nombre en el plano.
  *   lineas:  (opcional) parte el nombre en varias líneas dentro del plano.
  *   fuente:  (opcional) tamaño del texto en el plano.
+ *   mesas:   (opcional) true = en el plano de la sala se dibujan mesas
+ *            hexagonales con 6 sillas (mínimo 4). Las salas de investigación,
+ *            cafetería, TIC, auditorio, cómputo, tribal, ludoteca, procesos
+ *            técnicos, jefatura, secretaría y semilleros no llevan mesas.
  */
 
 const CATEGORIAS = {
@@ -37,10 +41,11 @@ const PISOS = [
       {
         nombre: "Sala 8",
         tipo: "sala",
+        mesas: true,
         d: "M43 200C43 180 60 167 82 167H203V290H43Z",
         c: [125, 232],
       },
-      { nombre: "Sala 7", tipo: "sala", d: R(225, 212, 107, 110), c: [279, 268] },
+      { nombre: "Sala 7", tipo: "sala", mesas: true, d: R(225, 212, 107, 110), c: [279, 268] },
       {
         nombre: "Sala de investigación A",
         tipo: "investigacion",
@@ -59,10 +64,10 @@ const PISOS = [
         fuente: 11,
         descripcion: "Espacio para trabajo de investigación.",
       },
-      { nombre: "Sala 6", tipo: "sala", d: R(457, 292, 58, 58), c: [486, 323] },
-      { nombre: "Sala 5", tipo: "sala", d: R(524, 272, 54, 78), c: [551, 312] },
-      { nombre: "Sala 4", tipo: "sala", d: R(580, 250, 60, 100), c: [610, 312] },
-      { nombre: "Sala 3", tipo: "sala", d: R(642, 250, 58, 100), c: [671, 312] },
+      { nombre: "Sala 6", tipo: "sala", mesas: true, d: R(457, 292, 58, 58), c: [486, 323] },
+      { nombre: "Sala 5", tipo: "sala", mesas: true, d: R(524, 272, 54, 78), c: [551, 312] },
+      { nombre: "Sala 4", tipo: "sala", mesas: true, d: R(580, 250, 60, 100), c: [610, 312] },
+      { nombre: "Sala 3", tipo: "sala", mesas: true, d: R(642, 250, 58, 100), c: [671, 312] },
       {
         nombre: "Ingreso",
         tipo: "servicio",
@@ -84,7 +89,7 @@ const PISOS = [
         c: [748, 278],
         descripcion: "Zona de cafetería.",
       },
-      { nombre: "Sala 2", tipo: "sala", d: R(692, 96, 88, 119), c: [737, 150] },
+      { nombre: "Sala 2", tipo: "sala", mesas: true, d: R(692, 96, 88, 119), c: [737, 150] },
       {
         nombre: "Sala TIC",
         tipo: "tecnologia",
@@ -95,6 +100,7 @@ const PISOS = [
       {
         nombre: "Sala 1",
         tipo: "sala",
+        mesas: true,
         d: "M838 177H931V112H1018V232H963V316H838Z",
         c: [895, 240],
       },
@@ -143,7 +149,7 @@ const PISOS = [
         fuente: 11,
         descripcion: "Área de procesamiento técnico del material bibliográfico.",
       },
-      { nombre: "Sala 13", tipo: "sala", d: R(578, 283, 62, 47), c: [609, 307] },
+      { nombre: "Sala 13", tipo: "sala", mesas: true, d: R(578, 283, 62, 47), c: [609, 307] },
       {
         nombre: "Jefatura",
         tipo: "administrativo",
@@ -159,8 +165,8 @@ const PISOS = [
         c: [750, 290],
         descripcion: "Oficina de secretaría.",
       },
-      { nombre: "Sala 12", tipo: "sala", d: R(694, 96, 90, 119), c: [738, 155] },
-      { nombre: "Sala 11", tipo: "sala", d: R(846, 96, 88, 222), c: [890, 200] },
+      { nombre: "Sala 12", tipo: "sala", mesas: true, d: R(694, 96, 90, 119), c: [738, 155] },
+      { nombre: "Sala 11", tipo: "sala", mesas: true, d: R(846, 96, 88, 222), c: [890, 200] },
       {
         nombre: "Sala de semilleros A",
         tipo: "investigacion",
@@ -182,12 +188,14 @@ const PISOS = [
       {
         nombre: "Sala 10",
         tipo: "sala",
+        mesas: true,
         d: "M1026 222H1145V274H1111V300H1026Z",
         c: [1075, 258],
       },
       {
         nombre: "Sala 9",
         tipo: "sala",
+        mesas: true,
         d: "M1022 135H1217V228H1240V303H1146V222H1022Z",
         c: [1128, 172],
       },
@@ -202,6 +210,7 @@ const PISOS = [
       {
         nombre: "Sala 14",
         tipo: "sala",
+        mesas: true,
         d: "M935 199H1020V172H1169V137H1243V235H1224V308H1146V276H1104V305H935Z",
         c: [1085, 240],
       },

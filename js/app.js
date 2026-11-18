@@ -233,6 +233,112 @@
       : "";
   };
 
+  /* ---------- Mesas hexagonales (plano de la sala) ---------- */
+
+  const MESAS_MIN = 4;
+  const MESAS_MAX = 12;
+  const RADIO_MAX = 24;
+  const RADIO_MIN = 7;
+
+  // Mesa hexagonal con 6 sillas, vista desde arriba. Unidad = radio total (1).
+  const dibujarMesa = (cx, cy, radio) => {
+    const g = crearSvg("g", { class: "mesa", transform: `translate(${cx} ${cy}) scale(${radio})` });
+    for (let i = 0; i < 6; i++) {
+      const ang = i * 60;
+      g.append(
+        crearSvg(
+          "g",
+          { transform: `rotate(${ang}) translate(0.8 0)` },
+          crearSvg("rect", { class: "silla", x: -0.17, y: -0.17, width: 0.34, height: 0.34, rx: 0.06 }),
+          crearSvg("rect", { class: "silla-lomo", x: 0.11, y: -0.2, width: 0.08, height: 0.4, rx: 0.03 })
+        )
+      );
+    }
+    const puntos = Array.from({ length: 6 }, (_, i) => {
+      const a = (i * Math.PI) / 3;
+      return `${(0.52 * Math.cos(a)).toFixed(3)},${(0.52 * Math.sin(a)).toFixed(3)}`;
+    }).join(" ");
+    g.append(crearSvg("polygon", { class: "mesa-tablero", points: puntos }));
+    return g;
+  };
+
+  // Calcula dónde caben las mesas: rasteriza la zona, el piso y los muros en
+  // un canvas y busca la cuadrícula con más mesas que quepan sin tocar muros.
+  const calcularMesas = (sala, geo, caja) => {
+    const x0 = Math.floor(caja.x) - 2;
+    const y0 = Math.floor(caja.y) - 2;
+    const w = Math.ceil(caja.width) + 4;
+    const h = Math.ceil(caja.height) + 4;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.translate(-x0, -y0);
+
+    const rasterizar = (pintar) => {
+      ctx.clearRect(x0, y0, w, h);
+      ctx.fillStyle = "#000";
+      ctx.strokeStyle = "#000";
+      pintar();
+      return ctx.getImageData(0, 0, w, h).data;
+    };
+    const zona = rasterizar(() => ctx.fill(new Path2D(sala.d)));
+    const piso = rasterizar(() => ctx.fill(new Path2D(geo.piso), "evenodd"));
+    const muros = rasterizar(() => {
+      const trazo = new Path2D(geo.muros);
+      ctx.lineWidth = 3;
+      ctx.fill(trazo, "evenodd");
+      ctx.stroke(trazo);
+    });
+
+    const dentro = (mapa, x, y) => {
+      const ix = Math.round(x - x0);
+      const iy = Math.round(y - y0);
+      return ix >= 0 && iy >= 0 && ix < w && iy < h && mapa[(iy * w + ix) * 4 + 3] > 127;
+    };
+    const libreEstricto = (x, y) => dentro(zona, x, y) && dentro(piso, x, y) && !dentro(muros, x, y);
+    const libreZona = (x, y) => dentro(zona, x, y);
+
+    const cabe = (libre, cx, cy, r) => {
+      if (!libre(cx, cy)) return false;
+      for (let i = 0; i < 20; i++) {
+        const a = (i / 20) * Math.PI * 2;
+        if (!libre(cx + Math.cos(a) * r, cy + Math.sin(a) * r)) return false;
+        if (i % 2 === 0 && !libre(cx + Math.cos(a) * r * 0.5, cy + Math.sin(a) * r * 0.5)) return false;
+      }
+      return true;
+    };
+
+    const mejorCuadricula = (libre, r) => {
+      const paso = 2 * r + Math.max(3, r * 0.25);
+      let mejor = [];
+      const saltos = 6;
+      for (let i = 0; i < saltos; i++) {
+        for (let j = 0; j < saltos; j++) {
+          const lista = [];
+          for (let cy = caja.y + (paso * j) / saltos; cy <= caja.y + caja.height; cy += paso) {
+            for (let cx = caja.x + (paso * i) / saltos; cx <= caja.x + caja.width; cx += paso) {
+              if (cabe(libre, cx, cy, r)) lista.push([cx, cy]);
+            }
+          }
+          if (lista.length > mejor.length) mejor = lista;
+        }
+      }
+      return mejor;
+    };
+
+    // Primero evitando muros; si no caben 4, solo se exige estar dentro de la zona.
+    for (const libre of [libreEstricto, libreZona]) {
+      for (let r = RADIO_MAX; r >= RADIO_MIN; r--) {
+        const lista = mejorCuadricula(libre, r);
+        if (lista.length >= MESAS_MIN) {
+          return { radio: r, centros: lista.slice(0, MESAS_MAX) };
+        }
+      }
+    }
+    return { radio: RADIO_MIN, centros: [] };
+  };
+
   /* Plano individual de la sala seleccionada: solo se ve su interior. */
   const renderSala = () => {
     const sala = estado.seleccion ? buscarSala(estado.seleccion) : null;
@@ -269,13 +375,20 @@
       crearSvg("path", { d: sala.d, fill: "#fff", stroke: "#fff", "stroke-width": 7, "stroke-linejoin": "round" })
     );
 
+    const mesas = sala.mesas ? calcularMesas(sala, geo, caja) : { radio: 0, centros: [] };
+
     const contenido = crearSvg(
       "g",
       { mask: "url(#mascara-sala)" },
       crearSvg("path", { d: geo.piso, class: "piso", "fill-rule": "evenodd" }),
       crearSvg("path", { d: sala.d, class: "sala-tinte" }),
-      crearSvg("path", { d: geo.muros, class: "muros", "fill-rule": "evenodd" })
+      crearSvg("path", { d: geo.muros, class: "muros", "fill-rule": "evenodd" }),
+      ...mesas.centros.map(([x, y]) => dibujarMesa(x, y, mesas.radio))
     );
+
+    if (mesas.centros.length) {
+      ui.salaMeta.textContent += ` · ${mesas.centros.length} mesas de 6 puestos`;
+    }
 
     ui.salaPlano.replaceChildren(crearSvg("defs", {}, mascara), contenido);
   };
