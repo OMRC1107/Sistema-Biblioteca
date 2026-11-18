@@ -22,7 +22,7 @@ Si abres `index.html` directamente como archivo, el mapa funciona pero las reser
 - Planos vectoriales calcados de las imágenes de referencia, con sus proporciones reales.
   Los tres pisos comparten escala y posición; en los pisos 2 y 3 se muestra el contorno punteado del piso inferior.
 - Clic en una sala: se abre debajo una pestaña con el plano de esa sala sola, ampliado, y su detalle.
-  En las Salas 1 a 14 el plano incluye mesas hexagonales de 6 puestos (mínimo 4, se acomodan solas según el espacio). Las demás áreas (investigación, cafetería, TIC, auditorio, cómputo, tribal, ludoteca, procesos técnicos, jefatura, secretaría, semilleros, ingreso y devoluciones) no llevan mesas; para activarlas en una sala basta añadir `mesas: true` en `js/data.js`. Enlace directo a una sala: `index.html#sala-8`.
+  En las Salas 1 a 14 el plano incluye mesas hexagonales de 6 puestos (todas del mismo tamaño; entre 4 y 12 por sala, repartidas según el espacio). Las demás áreas (investigación, cafetería, TIC, auditorio, cómputo, tribal, ludoteca, procesos técnicos, jefatura, secretaría, semilleros, ingreso y devoluciones) no llevan mesas; para activarlas en una sala basta añadir `mesas: true` en `js/data.js`. Enlace directo a una sala: `index.html#sala-8`.
 
 ## Estructura
 

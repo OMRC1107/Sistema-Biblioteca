@@ -243,8 +243,12 @@
 
   const MESAS_MIN = 4;
   const MESAS_MAX = 12;
-  const RADIO_MAX = 24;
-  const RADIO_MIN = 7;
+  // Todas las mesas de la biblioteca miden lo mismo (radio en unidades del plano).
+  // 7 es el mayor tamaño con el que caben 4 mesas en las salas más pequeñas (6 y 13).
+  const RADIO_MESA = 7;
+  // Escala fija del plano de la sala (px por unidad): así las mesas se ven del
+  // mismo tamaño en todas las salas, y las salas pequeñas se ven más pequeñas.
+  const ESCALA_PLANO_SALA = 3.6;
 
   const ETIQUETA_ESTADO = {
     libre: "disponible",
@@ -294,15 +298,15 @@
     }).join(" ");
     g.append(
       crearSvg("polygon", { class: "mesa-tablero", points: puntos }),
-      crearSvg("text", { class: "mesa-num", x: 0, y: 0.02, "font-size": 0.42, text: String(numero) })
+      crearSvg("text", { class: "mesa-num", x: 0, y: 0.02, "font-size": 0.5, text: String(numero) })
     );
     if (INSIGNIA[situacion]) {
       g.append(
         crearSvg(
           "g",
-          { class: "mesa-insignia", transform: "translate(0.34 -0.34)" },
-          crearSvg("circle", { r: 0.17 }),
-          crearSvg("text", { x: 0, y: 0.01, "font-size": 0.2, text: INSIGNIA[situacion] })
+          { class: "mesa-insignia", transform: "translate(0.4 -0.4)" },
+          crearSvg("circle", { r: 0.24 }),
+          crearSvg("text", { x: 0, y: 0.01, "font-size": 0.3, text: INSIGNIA[situacion] })
         )
       );
     }
@@ -356,8 +360,7 @@
       return true;
     };
 
-    const mejorCuadricula = (libre, r) => {
-      const paso = 2 * r + Math.max(3, r * 0.25);
+    const mejorCuadricula = (libre, r, paso) => {
       let mejor = [];
       const saltos = 6;
       for (let i = 0; i < saltos; i++) {
@@ -375,15 +378,21 @@
     };
 
     // Primero evitando muros; si no caben 4, solo se exige estar dentro de la zona.
+    // Con el tamaño fijo, se separa la cuadrícula lo necesario para no pasar de
+    // MESAS_MAX: en salas grandes las mesas quedan repartidas, no amontonadas.
+    const r = RADIO_MESA;
+    const pasoMin = 2 * r + Math.max(3, r * 0.25);
     for (const libre of [libreEstricto, libreZona]) {
-      for (let r = RADIO_MAX; r >= RADIO_MIN; r--) {
-        const lista = mejorCuadricula(libre, r);
-        if (lista.length >= MESAS_MIN) {
-          return { radio: r, centros: lista.slice(0, MESAS_MAX) };
-        }
+      let ultima = mejorCuadricula(libre, r, pasoMin);
+      if (ultima.length < MESAS_MIN) continue;
+      for (let paso = pasoMin; ultima.length > MESAS_MAX; paso += 1) {
+        const lista = mejorCuadricula(libre, r, paso);
+        if (lista.length < MESAS_MIN) break;
+        ultima = lista;
       }
+      return { radio: r, centros: ultima.slice(0, MESAS_MAX) };
     }
-    return { radio: RADIO_MIN, centros: [] };
+    return { radio: r, centros: [] };
   };
 
   // Utilidad para tools/generar_mesas.py (calcula la distribución de mesas de una sala).
@@ -426,10 +435,12 @@
     ui.salaPlano.replaceChildren(medida);
     const caja = medida.getBBox();
     const margen = Math.max(14, Math.max(caja.width, caja.height) * 0.08);
+    const anchoVista = caja.width + margen * 2;
     ui.salaPlano.setAttribute(
       "viewBox",
-      `${caja.x - margen} ${caja.y - margen} ${caja.width + margen * 2} ${caja.height + margen * 2}`
+      `${caja.x - margen} ${caja.y - margen} ${anchoVista} ${caja.height + margen * 2}`
     );
+    ui.salaPlano.style.width = `${Math.round(anchoVista * ESCALA_PLANO_SALA)}px`;
 
     // La máscara engrosa un poco la zona para no cortar los muros del borde.
     const mascara = crearSvg(

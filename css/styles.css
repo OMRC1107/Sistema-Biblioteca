@@ -656,7 +656,8 @@ body {
 
 .sala-lienzo {
   display: flex;
-  justify-content: center;
+  justify-content: safe center;
+  overflow-x: auto;
   padding: 16px;
   background: var(--plano-fondo);
   border: 1px solid var(--line);
@@ -666,10 +667,8 @@ body {
 
 #sala-plano {
   display: block;
-  width: 100%;
-  max-width: 1100px;
-  height: auto;
-  max-height: 70vh;
+  flex: none;
+  height: auto; /* el ancho en px lo fija app.js: escala común a todas las salas */
 }
 
 #sala-plano .piso {
@@ -935,6 +934,10 @@ body {
 
 #sala-plano .mesa:hover .mesa-tablero {
   stroke-width: 0.09;
+}
+
+#sala-plano .mesa.desconocido .mesa-num {
+  fill: var(--mesa-linea);
 }
 
 #sala-plano .mesa-num {
