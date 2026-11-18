@@ -65,6 +65,9 @@
   const estado = {
     piso: PISOS[0].id,
     seleccion: null,
+    mesaSel: null,
+    mesaMensaje: "",
+    mesaOcupada: false,
     consulta: "",
     resultados: [],
     indiceActivo: 0,
@@ -87,6 +90,9 @@
     salaMeta: $("sala-meta"),
     salaPlano: $("sala-plano"),
     salaCerrar: $("sala-cerrar"),
+    mesaBloque: $("mesa-bloque"),
+    mesaAccion: $("mesa-accion"),
+    cuenta: $("cuenta"),
     leyenda: $("leyenda"),
     detalle: $("detalle"),
     listaTitulo: $("lista-titulo"),
@@ -240,15 +246,43 @@
   const RADIO_MAX = 24;
   const RADIO_MIN = 7;
 
+  const ETIQUETA_ESTADO = {
+    libre: "disponible",
+    reservada: "reservada",
+    mia: "reservada por ti",
+    desconocido: "sin información de reservas",
+  };
+  const INSIGNIA = { libre: "✓", reservada: "✕", mia: "★" };
+
   // Mesa hexagonal con 6 sillas, vista desde arriba. Unidad = radio total (1).
-  const dibujarMesa = (cx, cy, radio) => {
-    const g = crearSvg("g", { class: "mesa", transform: `translate(${cx} ${cy}) scale(${radio})` });
+  // Color: verde = disponible, rojo = reservada (además lleva un símbolo).
+  const dibujarMesa = ({ cx, cy, radio, numero, id, situacion, seleccionada }) => {
+    const g = crearSvg("g", {
+      class: `mesa ${situacion}${seleccionada ? " sel" : ""}`,
+      transform: `translate(${cx} ${cy}) scale(${radio})`,
+      role: "button",
+      tabindex: "0",
+      "data-mesa": id,
+      "aria-pressed": String(seleccionada),
+      "aria-label": `Mesa ${numero}, ${ETIQUETA_ESTADO[situacion]}`,
+      onclick: () => elegirMesa(id),
+      onkeydown: (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          elegirMesa(id);
+        }
+      },
+    });
+    g.append(
+      crearSvg("title", { text: `Mesa ${numero} · ${ETIQUETA_ESTADO[situacion]}` }),
+      crearSvg("circle", { class: "mesa-zona", r: 1.02 }),
+      crearSvg("circle", { class: "mesa-anillo", r: 1.06 })
+    );
     for (let i = 0; i < 6; i++) {
-      const ang = i * 60;
       g.append(
         crearSvg(
           "g",
-          { transform: `rotate(${ang}) translate(0.8 0)` },
+          { transform: `rotate(${i * 60}) translate(0.8 0)` },
           crearSvg("rect", { class: "silla", x: -0.17, y: -0.17, width: 0.34, height: 0.34, rx: 0.06 }),
           crearSvg("rect", { class: "silla-lomo", x: 0.11, y: -0.2, width: 0.08, height: 0.4, rx: 0.03 })
         )
@@ -258,7 +292,20 @@
       const a = (i * Math.PI) / 3;
       return `${(0.52 * Math.cos(a)).toFixed(3)},${(0.52 * Math.sin(a)).toFixed(3)}`;
     }).join(" ");
-    g.append(crearSvg("polygon", { class: "mesa-tablero", points: puntos }));
+    g.append(
+      crearSvg("polygon", { class: "mesa-tablero", points: puntos }),
+      crearSvg("text", { class: "mesa-num", x: 0, y: 0.02, "font-size": 0.42, text: String(numero) })
+    );
+    if (INSIGNIA[situacion]) {
+      g.append(
+        crearSvg(
+          "g",
+          { class: "mesa-insignia", transform: "translate(0.34 -0.34)" },
+          crearSvg("circle", { r: 0.17 }),
+          crearSvg("text", { x: 0, y: 0.01, "font-size": 0.2, text: INSIGNIA[situacion] })
+        )
+      );
+    }
     return g;
   };
 
@@ -339,6 +386,22 @@
     return { radio: RADIO_MIN, centros: [] };
   };
 
+  // Utilidad para tools/generar_mesas.py (calcula la distribución de mesas de una sala).
+  window.BibliotecaHerramientas = {
+    salasConMesas: () => salas.filter((s) => s.mesas).map((s) => s.nombre),
+    calcularMesasDeSala: (nombre) => {
+      const sala = salas.find((s) => s.nombre === nombre);
+      const svg = crearSvg("svg", { width: 10, height: 10 });
+      const ruta = crearSvg("path", { d: sala.d });
+      svg.append(ruta);
+      document.body.append(svg);
+      const caja = ruta.getBBox();
+      svg.remove();
+      return { id: sala.id, ...calcularMesas(sala, PLANOS[sala.piso], caja) };
+    },
+  };
+
+
   /* Plano individual de la sala seleccionada: solo se ve su interior. */
   const renderSala = () => {
     const sala = estado.seleccion ? buscarSala(estado.seleccion) : null;
@@ -375,7 +438,19 @@
       crearSvg("path", { d: sala.d, fill: "#fff", stroke: "#fff", "stroke-width": 7, "stroke-linejoin": "round" })
     );
 
-    const mesas = sala.mesas ? calcularMesas(sala, geo, caja) : { radio: 0, centros: [] };
+    const mesas = MESAS[sala.id] || { radio: 0, centros: [] };
+    const tablas = mesas.centros.map(([x, y], i) => {
+      const id = `${sala.id}#${i + 1}`;
+      return dibujarMesa({
+        cx: x,
+        cy: y,
+        radio: mesas.radio,
+        numero: i + 1,
+        id,
+        situacion: Cuenta.estadoMesa(id),
+        seleccionada: estado.mesaSel === id,
+      });
+    });
 
     const contenido = crearSvg(
       "g",
@@ -383,14 +458,173 @@
       crearSvg("path", { d: geo.piso, class: "piso", "fill-rule": "evenodd" }),
       crearSvg("path", { d: sala.d, class: "sala-tinte" }),
       crearSvg("path", { d: geo.muros, class: "muros", "fill-rule": "evenodd" }),
-      ...mesas.centros.map(([x, y]) => dibujarMesa(x, y, mesas.radio))
+      ...tablas
     );
 
     if (mesas.centros.length) {
-      ui.salaMeta.textContent += ` · ${mesas.centros.length} mesas de 6 puestos`;
+      const libres = mesas.centros.filter((_, i) => Cuenta.estadoMesa(`${sala.id}#${i + 1}`) === "libre").length;
+      ui.salaMeta.textContent +=
+        Cuenta.estado.disponible === true
+          ? ` · ${libres} de ${mesas.centros.length} mesas disponibles`
+          : ` · ${mesas.centros.length} mesas de 6 puestos`;
     }
 
     ui.salaPlano.replaceChildren(crearSvg("defs", {}, mascara), contenido);
+    renderMesaAccion(sala, mesas);
+  };
+
+  /* Panel de reserva de la mesa elegida. */
+  const renderMesaAccion = (sala, mesas) => {
+    ui.mesaBloque.hidden = !mesas.centros.length;
+    if (!mesas.centros.length) {
+      ui.mesaAccion.replaceChildren();
+      return;
+    }
+
+    const c = Cuenta.estado;
+    const partes = [];
+
+    if (c.disponible === false) {
+      partes.push(
+        crear("p", {
+          class: "mesa-estado",
+          text: "Las reservas necesitan el servidor de la biblioteca. Inícialo con «npm start» y abre la dirección que muestra.",
+        })
+      );
+    } else if (!estado.mesaSel) {
+      partes.push(crear("p", { class: "mesa-estado", text: "Elige una mesa del plano para reservarla." }));
+    } else {
+      const id = estado.mesaSel;
+      const numero = Number(id.split("#")[1]);
+      const situacion = Cuenta.estadoMesa(id);
+      const textoSituacion = { libre: "Disponible", reservada: "Reservada", mia: "Reservada por ti" }[situacion];
+      partes.push(
+        crear("p", { class: "mesa-estado" }, crear("strong", { text: `Mesa ${numero}` }), ` · ${textoSituacion}`)
+      );
+
+      const acciones = crear("div", { class: "acciones" });
+      if (situacion === "libre" && !c.usuario) {
+        acciones.append(
+          crear("button", {
+            class: "boton primario",
+            type: "button",
+            text: "Inicia sesión para reservar",
+            onclick: () => Cuenta.abrirDialogo("entrar"),
+          })
+        );
+      } else if (situacion === "libre") {
+        acciones.append(
+          crear("button", {
+            class: "boton primario",
+            type: "button",
+            text: "Reservar esta mesa",
+            onclick: (e) => accionMesa(e.currentTarget, () => Cuenta.reservar(id), `Mesa ${numero} reservada.`),
+          })
+        );
+      } else if (situacion === "mia") {
+        acciones.append(
+          crear("button", {
+            class: "boton peligro",
+            type: "button",
+            text: "Quitar reserva",
+            onclick: (e) => accionMesa(e.currentTarget, () => Cuenta.liberar(id), `Reserva de la mesa ${numero} quitada.`),
+          })
+        );
+      } else {
+        partes.push(crear("p", { class: "mesa-nota", text: "Otra persona ya apartó esta mesa." }));
+      }
+      if (acciones.childNodes.length) partes.push(acciones);
+    }
+
+    if (estado.mesaMensaje) {
+      partes.push(crear("p", { class: estado.mesaOcupada ? "mesa-nota" : "mesa-error", role: "status", text: estado.mesaMensaje }));
+    }
+    if (estado.mesaIrA) {
+      partes.push(
+        crear("button", {
+          class: "boton",
+          type: "button",
+          text: "Ver mi mesa reservada",
+          onclick: () => irAMiMesa(),
+        })
+      );
+    }
+    ui.mesaAccion.replaceChildren(...partes);
+  };
+
+  const elegirMesa = (id) => {
+    estado.mesaSel = id;
+    estado.mesaMensaje = "";
+    estado.mesaIrA = null;
+    estado.mesaOcupada = false;
+    renderSala();
+    enfocarMesa();
+  };
+
+  const enfocarMesa = () => {
+    if (!estado.mesaSel) return;
+    const el = ui.salaPlano.querySelector(`[data-mesa="${CSS.escape(estado.mesaSel)}"]`);
+    if (el) el.focus({ preventScroll: true });
+  };
+
+  const accionMesa = async (boton, hacer, exito) => {
+    boton.disabled = true;
+    estado.mesaMensaje = "";
+    estado.mesaIrA = null;
+    try {
+      await hacer();
+      estado.mesaMensaje = exito;
+      estado.mesaOcupada = true; // aviso informativo, no es un error
+    } catch (e) {
+      estado.mesaMensaje = e.estado === undefined ? "No se pudo conectar con el servidor." : e.message;
+      estado.mesaOcupada = false;
+      estado.mesaIrA = e.datos && e.datos.actual ? e.datos.actual : null;
+    }
+    renderSala();
+    enfocarMesa();
+  };
+
+  const irAMiMesa = () => {
+    const mia = Cuenta.estado.mia;
+    if (!mia) return;
+    const [salaId] = mia.split("#");
+    seleccionar(salaId, mia);
+  };
+
+  /* Estado de la sesión en la cabecera. */
+  const renderCuenta = () => {
+    const c = Cuenta.estado;
+    const nodos = [];
+    if (c.disponible === false) {
+      nodos.push(crear("span", { class: "cuenta-aviso", text: "Reservas no disponibles (sin servidor)" }));
+    } else if (c.disponible === true && !c.usuario) {
+      nodos.push(
+        crear("button", {
+          class: "boton-cuenta",
+          type: "button",
+          text: "Iniciar sesión",
+          onclick: () => Cuenta.abrirDialogo("entrar"),
+        })
+      );
+    } else if (c.usuario) {
+      nodos.push(crear("span", { class: "cuenta-nombre", text: `Hola, ${c.usuario.nombre}` }));
+      if (c.mia) {
+        const [salaId, numero] = c.mia.split("#");
+        const sala = buscarSala(salaId);
+        nodos.push(
+          crear("button", {
+            class: "boton-cuenta destacado",
+            type: "button",
+            text: `Mi mesa: ${sala ? sala.nombre : salaId} · Mesa ${numero}`,
+            onclick: irAMiMesa,
+          })
+        );
+      }
+      nodos.push(
+        crear("button", { class: "boton-cuenta", type: "button", text: "Cerrar sesión", onclick: () => Cuenta.salir() })
+      );
+    }
+    ui.cuenta.replaceChildren(...nodos);
   };
 
   const renderLista = () => {
@@ -544,7 +778,12 @@
     renderTodo();
   };
 
-  const seleccionar = (id) => {
+  const seleccionar = (id, mesaId = null) => {
+    if (id !== estado.seleccion || mesaId) {
+      estado.mesaSel = mesaId;
+      estado.mesaMensaje = "";
+      estado.mesaIrA = null;
+    }
     estado.seleccion = id;
     if (id) {
       const sala = buscarSala(id);
@@ -638,4 +877,20 @@
     estado.piso = inicial.piso;
   }
   renderTodo();
+  renderCuenta();
+
+  // Enlaces directos a una sala (#sala-8) también al cambiar el hash sin recargar.
+  window.addEventListener("hashchange", () => {
+    const sala = buscarSala(decodeURIComponent(location.hash.slice(1)));
+    if (sala && sala.id !== estado.seleccion) seleccionar(sala.id);
+  });
+
+  // Cuando cambia la sesión o las reservas (propias o de otras personas) se redibuja.
+  Cuenta.suscribir(() => {
+    renderCuenta();
+    const tenia = ui.salaPlano.contains(document.activeElement);
+    renderSala();
+    if (tenia) enfocarMesa();
+  });
+  Cuenta.iniciar();
 })();

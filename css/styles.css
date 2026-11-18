@@ -13,6 +13,8 @@
   --exterior: #e9edf0;
   --muro: #111827;
   --halo: #fffdf9;
+  --libre: #1f8a4c;
+  --ocupada: #c62f2f;
   --mesa: #ecebe8;
   --mesa-linea: #3b3b3b;
   --silla: #6a6a6a;
@@ -39,6 +41,8 @@
     --exterior: #2b2f33;
     --muro: #d8c6a8;
     --halo: #1f1914;
+    --libre: #34b36b;
+    --ocupada: #e5565a;
     --mesa: #d9d5cd;
     --mesa-linea: #0f0d0b;
     --silla: #9b9387;
@@ -710,6 +714,331 @@ body {
   .sala-panel {
     animation: none;
   }
+}
+
+/* ---------- Cuenta (cabecera) ---------- */
+
+.cuenta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 10px;
+  min-height: 38px;
+  font-size: 0.88rem;
+}
+
+.cuenta-nombre {
+  font-weight: 600;
+}
+
+.cuenta-aviso {
+  max-width: 220px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 0.78rem;
+  line-height: 1.3;
+}
+
+.boton-cuenta {
+  padding: 8px 14px;
+  border: 1px solid rgba(246, 236, 217, 0.45);
+  border-radius: 999px;
+  background: transparent;
+  color: #f6ecd9;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.boton-cuenta:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.boton-cuenta.destacado {
+  background: #e9c98f;
+  border-color: #e9c98f;
+  color: #2b2118;
+}
+
+.boton-cuenta.destacado:hover {
+  background: #f1d7a8;
+}
+
+.boton-cuenta:focus-visible {
+  outline: 3px solid #e9c98f;
+  outline-offset: 2px;
+}
+
+/* ---------- Diálogo de acceso ---------- */
+
+.dialogo {
+  width: min(92vw, 400px);
+  padding: 20px 22px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+
+.dialogo::backdrop {
+  background: rgba(20, 14, 10, 0.55);
+}
+
+.dlg-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.dlg-cab h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.35rem;
+}
+
+.dlg-modos {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--bg-2);
+}
+
+.dlg-modos button {
+  flex: 1;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.dlg-modos button[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.campo {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.campo[hidden] {
+  display: none;
+}
+
+.campo span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.campo input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+}
+
+.campo input:focus {
+  outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-color: var(--accent);
+}
+
+.campo-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.dlg-error {
+  min-height: 1.3em;
+  margin: 6px 0 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ocupada);
+}
+
+.dialogo .boton {
+  width: 100%;
+}
+
+.boton.primario {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.boton.primario:hover {
+  background: color-mix(in srgb, var(--accent) 85%, #000);
+}
+
+.boton.peligro {
+  border-color: var(--ocupada);
+  color: var(--ocupada);
+}
+
+.boton:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* ---------- Mesas: estado y reserva ---------- */
+
+#sala-plano .mesa {
+  cursor: pointer;
+  outline: none;
+}
+
+#sala-plano .mesa-zona {
+  fill: transparent;
+}
+
+#sala-plano .mesa-anillo {
+  display: none;
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 0.06;
+  stroke-dasharray: 0.16 0.1;
+}
+
+#sala-plano .mesa.sel .mesa-anillo,
+#sala-plano .mesa:focus-visible .mesa-anillo {
+  display: block;
+}
+
+#sala-plano .mesa.libre .mesa-tablero {
+  fill: var(--libre);
+}
+
+#sala-plano .mesa.reservada .mesa-tablero,
+#sala-plano .mesa.mia .mesa-tablero {
+  fill: var(--ocupada);
+}
+
+#sala-plano .mesa:hover .mesa-tablero {
+  stroke-width: 0.09;
+}
+
+#sala-plano .mesa-num {
+  fill: #fff;
+  font-family: var(--sans);
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+#sala-plano .mesa-insignia circle {
+  fill: #fff;
+  stroke: var(--mesa-linea);
+  stroke-width: 0.04;
+}
+
+#sala-plano .mesa-insignia text {
+  fill: #1c1c1c;
+  font-family: var(--sans);
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.mesa-bloque {
+  margin-top: 12px;
+  padding: 14px 18px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.mesa-bloque[hidden] {
+  display: none;
+}
+
+.mesa-leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.mesa-leyenda li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.muestra {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.muestra.libre {
+  background: var(--libre);
+}
+
+.muestra.reservada {
+  background: var(--ocupada);
+}
+
+.muestra.mia {
+  background: var(--ocupada);
+  box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--ocupada);
+}
+
+.mesa-accion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.mesa-accion p {
+  margin: 0;
+}
+
+.mesa-accion .acciones {
+  margin: 0;
+}
+
+.mesa-estado {
+  font-size: 1rem;
+}
+
+.mesa-nota {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.mesa-error {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--ocupada);
 }
 
 /* ---------- Responsive ---------- */

@@ -45,6 +45,8 @@
         />
         <ul id="resultados" class="resultados" role="listbox" hidden></ul>
       </div>
+
+      <div id="cuenta" class="cuenta" aria-live="polite"></div>
     </header>
 
     <main class="layout">
@@ -84,9 +86,45 @@
         <p id="sala-meta" class="sala-meta"></p>
       </div>
       <div class="sala-lienzo">
-        <svg id="sala-plano" role="img" xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="sala-plano" role="group" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div id="mesa-bloque" class="mesa-bloque" hidden>
+        <ul class="mesa-leyenda" aria-label="Estado de las mesas">
+          <li><span class="muestra libre"></span>Disponible</li>
+          <li><span class="muestra reservada"></span>Reservada</li>
+          <li><span class="muestra mia"></span>Reservada por ti</li>
+        </ul>
+        <div id="mesa-accion" class="mesa-accion" aria-live="polite"></div>
       </div>
     </section>
+
+    <dialog id="dlg-cuenta" class="dialogo" aria-labelledby="dlg-titulo">
+      <form id="form-cuenta" novalidate>
+        <div class="dlg-cab">
+          <h2 id="dlg-titulo">Iniciar sesión</h2>
+          <button id="dlg-cerrar" class="sala-cerrar" type="button" aria-label="Cerrar">×</button>
+        </div>
+        <div id="dlg-modos" class="dlg-modos" role="group" aria-label="Tipo de acceso">
+          <button type="button" data-modo="entrar" aria-selected="true">Ya tengo cuenta</button>
+          <button type="button" data-modo="registro" aria-selected="false">Crear cuenta</button>
+        </div>
+        <label class="campo">
+          <span>Código (7 cifras)</span>
+          <input id="f-codigo" inputmode="numeric" maxlength="7" autocomplete="username" placeholder="1234567" />
+        </label>
+        <label id="f-nombre-fila" class="campo" hidden>
+          <span>Nombre</span>
+          <input id="f-nombre" maxlength="60" autocomplete="name" placeholder="Tu nombre" />
+        </label>
+        <label class="campo">
+          <span>Contraseña (mínimo 8 caracteres)</span>
+          <input id="f-clave" type="password" maxlength="128" autocomplete="current-password" />
+        </label>
+        <label class="campo-check"><input id="f-mostrar" type="checkbox" /> Mostrar contraseña</label>
+        <p id="f-error" class="dlg-error" role="alert"></p>
+        <button id="f-enviar" class="boton primario" type="submit">Iniciar sesión</button>
+      </form>
+    </dialog>
 
     <footer class="pie">
       <p>Haz clic en una sala del plano o busca una sala por nombre, número o piso.</p>
@@ -94,6 +132,8 @@
 
     <script src="js/planos.js"></script>
     <script src="js/data.js"></script>
+    <script src="js/mesas.js"></script>
+    <script src="js/cuenta.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

@@ -1,0 +1,12 @@
+{
+  "name": "sistema-biblioteca",
+  "version": "1.0.0",
+  "description": "Mapa de la biblioteca con búsqueda de salas y reserva de mesas",
+  "private": true,
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
