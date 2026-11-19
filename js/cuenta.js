@@ -71,8 +71,8 @@ const Cuenta = (() => {
       estado.usuario = yo.usuario;
       aplicarReservas(reservas);
     } catch (e) {
-      if (e.estado === undefined) {
-        estado.disponible = false; // no hay servidor (p. ej. abierto como archivo)
+      if (e.estado === undefined || e.estado === 503) {
+        estado.disponible = false; // sin servidor (p. ej. abierto como archivo) o sin base de datos
         estado.usuario = null;
         estado.reservas = {};
         estado.mia = null;

@@ -499,7 +499,7 @@
       partes.push(
         crear("p", {
           class: "mesa-estado",
-          text: "Las reservas necesitan el servidor de la biblioteca. Inícialo con «npm start» y abre la dirección que muestra.",
+          text: "Las reservas necesitan el servidor y la base de datos de la biblioteca. Inícialos con «npm start» (con MySQL encendido) y abre la dirección que muestra.",
         })
       );
     } else if (!estado.mesaSel) {
@@ -607,7 +607,7 @@
     const c = Cuenta.estado;
     const nodos = [];
     if (c.disponible === false) {
-      nodos.push(crear("span", { class: "cuenta-aviso", text: "Reservas no disponibles (sin servidor)" }));
+      nodos.push(crear("span", { class: "cuenta-aviso", text: "Reservas no disponibles (servidor o base de datos sin conexión)" }));
     } else if (c.disponible === true && !c.usuario) {
       nodos.push(
         crear("button", {

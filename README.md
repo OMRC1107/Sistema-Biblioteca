@@ -2,17 +2,47 @@
 
 Visor web de los 3 pisos de la biblioteca con búsqueda de salas.
 
-## Uso
+## Puesta en marcha
 
-Requiere Node.js 18 o superior. No tiene dependencias que instalar.
+Requiere **Node.js 18+** y **MySQL 5.7+ / 8 (o MariaDB 10.3+)**. Usuarios y reservas se guardan en MySQL.
+
+1. **Crea la base de datos y un usuario** (en el cliente `mysql`, o desde phpMyAdmin/Workbench):
+
+   ```sql
+   CREATE DATABASE biblioteca CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   CREATE USER 'biblioteca'@'localhost' IDENTIFIED BY 'cambia-esta-clave';
+   GRANT ALL PRIVILEGES ON biblioteca.* TO 'biblioteca'@'localhost';
+   ```
+
+   (Si solo usas `root` en un entorno local, basta con poner sus datos en el paso 2: el servidor crea la base si no existe.)
+
+2. **Configura la conexión**: copia `.env.example` como `.env` y escribe tus datos (`DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`). El archivo `.env` no se sube a git.
+3. **Instala y arranca**:
+
+   ```
+   npm install
+   npm start
+   ```
+
+   Las tablas (`usuarios` y `reservas`, ver `schema.sql`) se crean solas al iniciar. Abre http://127.0.0.1:3000.
+   `HOST` y `PORT` también se pueden cambiar en `.env` (con `HOST=0.0.0.0` se accede desde la red local).
+
+Si abres `index.html` directamente como archivo, el mapa funciona pero las reservas quedan desactivadas (necesitan el servidor y la base de datos).
+
+### Si ya tenías cuentas de la versión anterior (archivo JSON)
+
+Con el servidor ya configurado, copia las cuentas y reservas de `datos/biblioteca.json` a MySQL (conservan su contraseña):
 
 ```
-npm start            # o: node server.js
+npm run migrar                       # lee datos/biblioteca.json
+node tools/migrar_json_a_mysql.js ruta/al/biblioteca.json
 ```
 
-Abre http://127.0.0.1:3000. Variables opcionales: `PORT`, `HOST` (por defecto solo accesible desde tu computador; usa `HOST=0.0.0.0` para la red local) y `DATOS_DIR`.
+### Pruebas
 
-Si abres `index.html` directamente como archivo, el mapa funciona pero las reservas quedan desactivadas (necesitan el servidor).
+`npm test` (requiere Node 22.5+) ejecuta las pruebas del servidor con una base SQLite en memoria que imita a MySQL.
+
+## Qué incluye
 
 - Pestañas para cambiar de piso.
 - Buscador por nombre, número, piso o categoría (atajo: `/`, navegación con flechas y Enter).
@@ -26,7 +56,10 @@ Si abres `index.html` directamente como archivo, el mapa funciona pero las reser
 
 ## Estructura
 
-- `server.js`: servidor (sin dependencias): cuentas, sesiones y reservas. Guarda todo en `datos/biblioteca.json` (no se sube a git)
+- `server.js`: servidor web con la API de cuentas, sesiones y reservas
+- `db.js` y `schema.sql`: conexión y consultas a MySQL, y el esquema de las tablas
+- `.env.example`: plantilla de configuración (copiar como `.env`)
+- `test/`: pruebas automáticas del servidor
 - `js/cuenta.js`: cliente de cuenta/reservas y diálogo de acceso
 - `js/mesas.js`: posición fija de las mesas de cada sala (**generado**; mesa N de la sala X = `sala-x#N`)
 - `index.html`, `css/styles.css`: página y estilos (tema claro/oscuro automático)
@@ -34,6 +67,7 @@ Si abres `index.html` directamente como archivo, el mapa funciona pero las reser
 - `js/data.js`: pisos, salas, categorías y la zona clicable de cada sala (editar aquí para agregar o ajustar salas)
 - `js/planos.js`: muros, pisos y exteriores vectorizados (**generado**, no editar a mano)
 - `referencia/`: imágenes originales de cada piso
+- `tools/migrar_json_a_mysql.js`: migra las cuentas de la versión anterior a MySQL
 - `tools/generar_planos.py`: regenera `js/planos.js` desde `referencia/`
 
 ## Regenerar los planos
@@ -56,4 +90,4 @@ python3 tools/generar_mesas.py
 
 ## Seguridad
 
-Las contraseñas se guardan con scrypt y sal propia; la sesión va en una cookie `HttpOnly` + `SameSite=Strict`; las peticiones que modifican datos exigen una cabecera propia (anti-CSRF); hay bloqueo temporal tras 5 contraseñas erróneas y límite de intentos por IP; solo se sirven `index.html`, `css/` y `js/`. Si lo publicas en internet, ponlo detrás de HTTPS.
+Las contraseñas se guardan con scrypt y sal propia; la sesión va en una cookie `HttpOnly` + `SameSite=Strict`; las peticiones que modifican datos exigen una cabecera propia (anti-CSRF); la unicidad de cuentas y reservas la garantiza la propia base de datos (claves primarias/únicas); hay bloqueo temporal tras 5 contraseñas erróneas y límite de intentos por IP; solo se sirven `index.html`, `css/` y `js/`. Si lo publicas en internet, ponlo detrás de HTTPS.
