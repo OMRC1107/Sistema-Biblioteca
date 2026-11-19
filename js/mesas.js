@@ -1,7 +1,7 @@
 /* Generado por tools/generar_mesas.py desde tools/marcas_mesas.json. Mesa N = N-ésimo centro en orden de lectura. */
 const MESAS = {
   "galeria-de-lectura": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         383,
@@ -42,7 +42,7 @@ const MESAS = {
     ]
   },
   "ingreso": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         447,
@@ -63,7 +63,7 @@ const MESAS = {
     ]
   },
   "sala-1": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         953,
@@ -112,7 +112,7 @@ const MESAS = {
     ]
   },
   "sala-2": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         715,
@@ -137,7 +137,7 @@ const MESAS = {
     ]
   },
   "sala-3": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         673,
@@ -154,7 +154,7 @@ const MESAS = {
     ]
   },
   "sala-4": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         608,
@@ -171,7 +171,7 @@ const MESAS = {
     ]
   },
   "sala-5": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         548,
@@ -184,7 +184,7 @@ const MESAS = {
     ]
   },
   "sala-7": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         311,
@@ -213,7 +213,7 @@ const MESAS = {
     ]
   },
   "sala-8": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         78,
@@ -266,7 +266,7 @@ const MESAS = {
     ]
   },
   "sala-9": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         1104,
@@ -315,7 +315,7 @@ const MESAS = {
     ]
   },
   "sala-10": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         1045.5,
@@ -332,7 +332,7 @@ const MESAS = {
     ]
   },
   "sala-11": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         866,
@@ -381,7 +381,7 @@ const MESAS = {
     ]
   },
   "sala-12": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         714,
@@ -418,7 +418,7 @@ const MESAS = {
     ]
   },
   "sala-13": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         624,
@@ -431,7 +431,7 @@ const MESAS = {
     ]
   },
   "sala-14": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         1189.3,
@@ -504,7 +504,7 @@ const MESAS = {
     ]
   },
   "sala-15": {
-    "radio": 7,
+    "radio": 10,
     "centros": [
       [
         958,

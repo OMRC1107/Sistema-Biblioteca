@@ -68,11 +68,6 @@
 
       <aside class="panel" aria-label="Información de salas">
         <article id="detalle" class="tarjeta detalle" aria-live="polite"></article>
-
-        <section class="tarjeta">
-          <h2 id="lista-titulo" class="lista-titulo"></h2>
-          <ul id="lista" class="lista"></ul>
-        </section>
       </aside>
     </main>
 
@@ -85,16 +80,19 @@
         </div>
         <p id="sala-meta" class="sala-meta"></p>
       </div>
-      <div class="sala-lienzo">
-        <svg id="sala-plano" role="group" xmlns="http://www.w3.org/2000/svg"></svg>
-      </div>
-      <div id="mesa-bloque" class="mesa-bloque" hidden>
-        <ul class="mesa-leyenda" aria-label="Estado de las mesas">
-          <li><span class="muestra libre"></span>Disponible</li>
-          <li><span class="muestra reservada"></span>Reservada</li>
-          <li><span class="muestra mia"></span>Reservada por ti</li>
-        </ul>
-        <div id="mesa-accion" class="mesa-accion" aria-live="polite"></div>
+      <div class="sala-cuerpo">
+        <div class="sala-lienzo">
+          <svg id="sala-plano" role="group" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <aside id="mesa-bloque" class="mesa-bloque" aria-labelledby="mesa-titulo" hidden>
+          <h3 id="mesa-titulo">Información de reserva</h3>
+          <ul class="mesa-leyenda" aria-label="Estado de las mesas">
+            <li><span class="muestra libre"></span>Disponible</li>
+            <li><span class="muestra reservada"></span>Reservada</li>
+            <li><span class="muestra mia"></span>Reservada por ti</li>
+          </ul>
+          <div id="mesa-accion" class="mesa-accion" aria-live="polite"></div>
+        </aside>
       </div>
     </section>
 
@@ -127,7 +125,7 @@
     </dialog>
 
     <footer class="pie">
-      <p>Haz clic en una sala del plano o busca una sala por nombre, número o piso.</p>
+      <p>Haz clic en una sala con mesas del plano o búscala por nombre, número o piso.</p>
     </footer>
 
     <script src="js/planos.js"></script>

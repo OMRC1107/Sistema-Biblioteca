@@ -60,6 +60,28 @@
 
   const buscarSala = (id) => salas.find((s) => s.id === id) || null;
 
+  // Solo se pueden seleccionar las salas que tienen mesas.
+  const mesasDe = (sala) => (MESAS[sala.id] ? MESAS[sala.id].centros.length : 0);
+  const seleccionable = (sala) => mesasDe(sala) > 0;
+
+  // Mesas de una lista de salas: total, disponibles y reservadas (null sin servidor).
+  const contarMesas = (lista) => {
+    let total = 0;
+    let libres = 0;
+    let reservadas = 0;
+    for (const sala of lista) {
+      const n = mesasDe(sala);
+      total += n;
+      for (let i = 1; i <= n; i++) {
+        const situacion = Cuenta.estadoMesa(`${sala.id}#${i}`);
+        if (situacion === "libre") libres++;
+        else if (situacion === "reservada" || situacion === "mia") reservadas++;
+      }
+    }
+    const conectado = Cuenta.estado.disponible === true;
+    return { total, libres: conectado ? libres : null, reservadas: conectado ? reservadas : null };
+  };
+
   /* ---------- Estado ---------- */
 
   const estado = {
@@ -89,14 +111,13 @@
     salaTitulo: $("sala-titulo"),
     salaMeta: $("sala-meta"),
     salaPlano: $("sala-plano"),
+    salaLienzo: document.querySelector(".sala-lienzo"),
     salaCerrar: $("sala-cerrar"),
     mesaBloque: $("mesa-bloque"),
     mesaAccion: $("mesa-accion"),
     cuenta: $("cuenta"),
     leyenda: $("leyenda"),
     detalle: $("detalle"),
-    listaTitulo: $("lista-titulo"),
-    lista: $("lista"),
   };
 
   const pisoActual = () => PISOS.find((p) => p.id === estado.piso);
@@ -108,7 +129,7 @@
     if (!q) return [];
     const palabras = q.split(/\s+/);
     return salas
-      .filter((s) => palabras.every((p) => s.busqueda.includes(p)))
+      .filter((s) => seleccionable(s) && palabras.every((p) => s.busqueda.includes(p)))
       .sort((a, b) => {
         const aInicio = normalizar(a.nombre).startsWith(q) ? 0 : 1;
         const bInicio = normalizar(b.nombre).startsWith(q) ? 0 : 1;
@@ -120,6 +141,11 @@
     !estado.consulta || estado.resultados.some((r) => r.id === sala.id);
 
   /* ---------- Renderizado ---------- */
+
+  const textoMesas = (lista) => {
+    const n = contarMesas(lista).total;
+    return `${n} ${n === 1 ? "mesa" : "mesas"}`;
+  };
 
   const renderPestanas = () => {
     const botones = PISOS.map((piso) => {
@@ -135,7 +161,7 @@
           onclick: () => cambiarPiso(piso.id),
         },
         crear("span", { text: piso.nombre }),
-        crear("small", { text: `${piso.salas.length} ${piso.salas.length === 1 ? "sala" : "salas"}` })
+        crear("small", { text: textoMesas(salas.filter((s) => s.piso === piso.id)) })
       );
     });
     ui.pestanas.replaceChildren(...botones);
@@ -148,6 +174,14 @@
         {},
         crear("span", { class: "punto", estilo: `--color:${cat.color}` }),
         crear("span", { text: cat.etiqueta })
+      )
+    );
+    items.push(
+      crear(
+        "li",
+        {},
+        crear("span", { class: "punto sin-mesas-punto" }),
+        crear("span", { text: "Sin mesas (no se puede seleccionar)" })
       )
     );
     ui.leyenda.replaceChildren(...items);
@@ -180,21 +214,21 @@
       const coincide = Boolean(estado.consulta) && coincideConConsulta(sala);
       const atenuado = Boolean(estado.consulta) && !coincide;
 
+      const habilitada = seleccionable(sala);
       const estados = [];
       if (activo) estados.push("activa");
       if (coincide) estados.push("coincide");
       if (atenuado) estados.push("atenuada");
+      if (!habilitada) estados.push("sin-mesas");
       const estilo = `--color:${colorDe(sala.tipo)}`;
 
-      capas.push(
-        crearSvg(
-          "g",
-          {
+      const propsSala = habilitada
+        ? {
             class: ["sala", ...estados].join(" "),
             style: estilo,
             role: "button",
             tabindex: "0",
-            "aria-label": `${sala.nombre}, ${sala.pisoNombre}`,
+            "aria-label": `${sala.nombre}, ${sala.pisoNombre}, ${textoMesas([sala])}`,
             "aria-pressed": String(activo),
             onclick: () => seleccionar(sala.id),
             onkeydown: (e) => {
@@ -203,8 +237,20 @@
                 seleccionar(sala.id);
               }
             },
-          },
-          crearSvg("title", { text: `${sala.nombre} · ${etiquetaDe(sala.tipo)}` }),
+          }
+        : {
+            class: ["sala", ...estados].join(" "),
+            style: estilo,
+            "aria-label": `${sala.nombre}, ${sala.pisoNombre}, sin mesas`,
+          };
+
+      capas.push(
+        crearSvg(
+          "g",
+          propsSala,
+          crearSvg("title", {
+            text: `${sala.nombre} · ${habilitada ? textoMesas([sala]) : "sin mesas, no se puede seleccionar"}`,
+          }),
           crearSvg("path", { d: datos.d, class: "forma" })
         )
       );
@@ -244,8 +290,9 @@
   const MESAS_MIN = 4;
   const MESAS_MAX = 12;
   // Todas las mesas de la biblioteca miden lo mismo (radio en unidades del plano).
-  // 7 es el mayor tamaño con el que caben 4 mesas en las salas más pequeñas (6 y 13).
-  const RADIO_MESA = 7;
+  // Debe coincidir con RADIO de tools/generar_mesas.py, que además comprueba que
+  // ninguna mesa se sobreponga con otra.
+  const RADIO_MESA = 10;
   // Escala fija del plano de la sala (px por unidad): así las mesas se ven del
   // mismo tamaño en todas las salas, y las salas pequeñas se ven más pequeñas.
   const ESCALA_PLANO_SALA = 3.6;
@@ -440,7 +487,11 @@
       "viewBox",
       `${caja.x - margen} ${caja.y - margen} ${anchoVista} ${caja.height + margen * 2}`
     );
-    ui.salaPlano.style.width = `${Math.round(anchoVista * ESCALA_PLANO_SALA)}px`;
+    // Escala común a todas las salas; solo se reduce si la sala es más ancha que el
+    // espacio disponible (así nunca hay que desplazarse para ver toda la sala).
+    const disponible = ui.salaLienzo.clientWidth - 34;
+    const escala = Math.max(1.8, Math.min(ESCALA_PLANO_SALA, disponible / anchoVista));
+    ui.salaPlano.style.width = `${Math.round(anchoVista * escala)}px`;
 
     // La máscara engrosa un poco la zona para no cortar los muros del borde.
     const mascara = crearSvg(
@@ -473,11 +524,11 @@
     );
 
     if (mesas.centros.length) {
-      const libres = mesas.centros.filter((_, i) => Cuenta.estadoMesa(`${sala.id}#${i + 1}`) === "libre").length;
+      const c = contarMesas([sala]);
       ui.salaMeta.textContent +=
-        Cuenta.estado.disponible === true
-          ? ` · ${libres} de ${mesas.centros.length} mesas disponibles`
-          : ` · ${mesas.centros.length} mesas de 6 puestos`;
+        c.libres === null
+          ? ` · ${c.total} mesas de 6 puestos`
+          : ` · ${c.libres} disponibles · ${c.reservadas} reservadas · ${c.total} mesas de 6 puestos`;
     }
 
     ui.salaPlano.replaceChildren(crearSvg("defs", {}, mascara), contenido);
@@ -638,45 +689,20 @@
     ui.cuenta.replaceChildren(...nodos);
   };
 
-  const renderLista = () => {
-    const piso = pisoActual();
-    const delPiso = salas.filter((s) => s.piso === piso.id);
-    const visibles = estado.consulta ? delPiso.filter(coincideConConsulta) : delPiso;
-
-    ui.listaTitulo.textContent = estado.consulta
-      ? `Coincidencias en el ${piso.nombre}`
-      : `Salas del ${piso.nombre}`;
-
-    if (!visibles.length) {
-      ui.lista.replaceChildren(
-        crear("li", {
-          class: "lista-vacia",
-          text: "Ninguna coincidencia en este piso. Revisa los otros pisos.",
-        })
+  // Tarjetas «Disponibles / Reservadas» de un conjunto de salas.
+  const bloqueConteo = (c) => {
+    if (c.libres === null) {
+      return crear(
+        "p",
+        { class: "conteo-aviso" },
+        `${c.total} ${c.total === 1 ? "mesa" : "mesas"}. Sin conexión con el servidor: no se sabe cuántas están disponibles.`
       );
-      return;
     }
-
-    ui.lista.replaceChildren(
-      ...visibles.map((sala) =>
-        crear(
-          "li",
-          {},
-          crear(
-            "button",
-            {
-              class: "lista-item",
-              type: "button",
-              estilo: `--color:${colorDe(sala.tipo)}`,
-              "aria-current": String(estado.seleccion === sala.id),
-              onclick: () => seleccionar(sala.id),
-            },
-            crear("span", { class: "punto", estilo: `--color:${colorDe(sala.tipo)}` }),
-            crear("span", { text: sala.nombre }),
-            crear("small", { text: etiquetaDe(sala.tipo) })
-          )
-        )
-      )
+    return crear(
+      "div",
+      { class: "conteo" },
+      crear("div", { class: "conteo-libre" }, crear("strong", { text: String(c.libres) }), crear("span", { text: c.libres === 1 ? "Disponible" : "Disponibles" })),
+      crear("div", { class: "conteo-reservada" }, crear("strong", { text: String(c.reservadas) }), crear("span", { text: c.reservadas === 1 ? "Reservada" : "Reservadas" }))
     );
   };
 
@@ -684,15 +710,28 @@
     const sala = estado.seleccion ? buscarSala(estado.seleccion) : null;
 
     if (!sala) {
+      const filas = PISOS.map((piso) => {
+        const c = contarMesas(salas.filter((s) => s.piso === piso.id));
+        return crear(
+          "li",
+          {},
+          crear("span", { text: piso.nombre }),
+          crear("small", {
+            text: c.libres === null ? `${c.total} mesas` : `${c.libres} disponibles · ${c.reservadas} reservadas`,
+          })
+        );
+      });
       ui.detalle.replaceChildren(
         crear(
           "div",
           { class: "detalle-vacio" },
-          crear("strong", { text: "Ninguna sala seleccionada" }),
+          crear("strong", { text: "Selecciona una sala en el plano" }),
           crear("span", {
-            text: "Elige una sala en el plano, una sala de la lista o usa el buscador.",
+            text: "Solo se pueden elegir las salas con mesas; las demás aparecen atenuadas. Mesas de toda la biblioteca:",
           })
-        )
+        ),
+        bloqueConteo(contarMesas(salas)),
+        crear("ul", { class: "conteo-pisos" }, ...filas)
       );
       return;
     }
@@ -705,7 +744,8 @@
         crear("span", { class: "insignia", text: sala.pisoNombre })
       ),
       crear("h2", { text: sala.nombre }),
-      crear("p", { text: sala.descripcion || "Sin descripción registrada." }),
+      crear("p", { text: sala.descripcion || `${textoMesas([sala])} de 6 puestos.` }),
+      bloqueConteo(contarMesas([sala])),
       crear(
         "div",
         { class: "acciones" },
@@ -745,7 +785,7 @@
 
     if (!estado.resultados.length) {
       ui.resultados.replaceChildren(
-        crear("li", { class: "resultado-vacio", role: "presentation", text: "No se encontraron salas." })
+        crear("li", { class: "resultado-vacio", role: "presentation", text: "No se encontraron salas con mesas." })
       );
       return;
     }
@@ -776,7 +816,6 @@
   const renderTodo = () => {
     renderPestanas();
     renderPlano();
-    renderLista();
     renderDetalle();
     renderSala();
     renderEstado();
@@ -790,6 +829,7 @@
   };
 
   const seleccionar = (id, mesaId = null) => {
+    if (id && !(buscarSala(id) && seleccionable(buscarSala(id)))) return;
     if (id !== estado.seleccion || mesaId) {
       estado.mesaSel = mesaId;
       estado.mesaMensaje = "";
@@ -879,11 +919,19 @@
     ui.pestanas.querySelector('[aria-selected="true"]').focus();
   });
 
+  let temporizador = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(temporizador);
+    temporizador = setTimeout(() => {
+      if (estado.seleccion) renderSala();
+    }, 150);
+  });
+
   /* ---------- Inicio ---------- */
 
   renderLeyenda();
   const inicial = buscarSala(decodeURIComponent(location.hash.slice(1)));
-  if (inicial) {
+  if (inicial && seleccionable(inicial)) {
     estado.seleccion = inicial.id;
     estado.piso = inicial.piso;
   }
@@ -893,12 +941,13 @@
   // Enlaces directos a una sala (#sala-8) también al cambiar el hash sin recargar.
   window.addEventListener("hashchange", () => {
     const sala = buscarSala(decodeURIComponent(location.hash.slice(1)));
-    if (sala && sala.id !== estado.seleccion) seleccionar(sala.id);
+    if (sala && seleccionable(sala) && sala.id !== estado.seleccion) seleccionar(sala.id);
   });
 
   // Cuando cambia la sesión o las reservas (propias o de otras personas) se redibuja.
   Cuenta.suscribir(() => {
     renderCuenta();
+    renderDetalle();
     const tenia = ui.salaPlano.contains(document.activeElement);
     renderSala();
     if (tenia) enfocarMesa();

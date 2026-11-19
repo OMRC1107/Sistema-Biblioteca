@@ -25,7 +25,8 @@ from playwright.sync_api import sync_playwright
 RAIZ = Path(__file__).resolve().parent.parent
 MARCAS = RAIZ / "tools" / "marcas_mesas.json"
 SALIDA = RAIZ / "js" / "mesas.js"
-RADIO = 7  # mismo tamaño para todas las mesas (unidades del plano)
+RADIO = 10  # mismo tamaño para todas las mesas (unidades del plano); igual a RADIO_MESA en js/app.js
+MARGEN = 3  # px mínimos libres entre dos mesas (con sillas, una mesa mide 2.12 × RADIO)
 TOLERANCIA = 20  # px: distancia máxima de una marca al borde de una sala
 TOLERANCIA_FILA = 8  # px: marcas con la misma y (±) cuentan como una fila
 
@@ -80,6 +81,16 @@ def main():
         filas.append(actual)
         ordenadas = [m for f in filas for m in sorted(f)]
         resultado[clave] = {"radio": RADIO, "centros": [[round(x, 1), round(y, 1)] for x, y in ordenadas]}
+
+    # Ninguna mesa puede sobreponerse a otra: se comprueba cada pareja de una sala.
+    minimo = 2.12 * RADIO + MARGEN
+    for sala, v in resultado.items():
+        c = v["centros"]
+        for i in range(len(c)):
+            for j in range(i + 1, len(c)):
+                d = ((c[i][0] - c[j][0]) ** 2 + (c[i][1] - c[j][1]) ** 2) ** 0.5
+                if d < minimo:
+                    raise SystemExit(f"{sala}: las mesas {i + 1} y {j + 1} se sobreponen (a {d:.1f} px, mínimo {minimo:.1f}). Reduce RADIO o separa las marcas.")
 
     resultado = dict(sorted(resultado.items(), key=lambda kv: [int(t) if t.isdigit() else t for t in kv[0].split("-")]))
     for k, v in resultado.items():
