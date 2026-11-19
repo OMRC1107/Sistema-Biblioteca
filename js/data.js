@@ -12,9 +12,8 @@
  *   lineas:  (opcional) parte el nombre en varias líneas dentro del plano.
  *   fuente:  (opcional) tamaño del texto en el plano.
  *   mesas:   (opcional) true = en el plano de la sala se dibujan mesas
- *            hexagonales con 6 sillas. Las salas de investigación,
- *            cafetería, TIC, auditorio, cómputo, tribal, ludoteca, procesos
- *            técnicos, jefatura, secretaría y semilleros no llevan mesas.
+ *            hexagonales con 6 sillas, una por cada cuadrado rojo de
+ *            tools/marcas_mesas.json que caiga dentro de la sala.
  */
 
 const CATEGORIAS = {
@@ -71,6 +70,7 @@ const PISOS = [
       {
         nombre: "Ingreso",
         tipo: "servicio",
+        mesas: true,
         d: "M225 177H690V250H448V248H335V212H225Z",
         c: [509, 197],
         descripcion: "Acceso principal a la biblioteca.",
@@ -164,6 +164,21 @@ const PISOS = [
         d: R(706, 246, 88, 74),
         c: [750, 290],
         descripcion: "Oficina de secretaría.",
+      },
+      {
+        nombre: "Galería de lectura",
+        tipo: "sala",
+        mesas: true,
+        d: "M340 150H690V246H340Z",
+        c: [515, 168],
+        descripcion: "Galería central del piso 2, con mesas de estudio.",
+      },
+      {
+        nombre: "Sala 15",
+        tipo: "sala",
+        mesas: true,
+        d: R(938, 108, 82, 80),
+        c: [979, 124],
       },
       { nombre: "Sala 12", tipo: "sala", mesas: true, d: R(694, 96, 90, 119), c: [738, 155] },
       { nombre: "Sala 11", tipo: "sala", mesas: true, d: R(846, 96, 88, 222), c: [890, 200] },

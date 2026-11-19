@@ -1,5 +1,67 @@
 /* Generado por tools/generar_mesas.py desde tools/marcas_mesas.json. Mesa N = N-ésimo centro en orden de lectura. */
 const MESAS = {
+  "galeria-de-lectura": {
+    "radio": 7,
+    "centros": [
+      [
+        383,
+        175
+      ],
+      [
+        421,
+        194
+      ],
+      [
+        455,
+        194
+      ],
+      [
+        485,
+        194
+      ],
+      [
+        520,
+        194
+      ],
+      [
+        556,
+        194
+      ],
+      [
+        593,
+        194
+      ],
+      [
+        626,
+        194
+      ],
+      [
+        670,
+        206
+      ]
+    ]
+  },
+  "ingreso": {
+    "radio": 7,
+    "centros": [
+      [
+        447,
+        201
+      ],
+      [
+        608,
+        201
+      ],
+      [
+        668,
+        206
+      ],
+      [
+        387.5,
+        221
+      ]
+    ]
+  },
   "sala-1": {
     "radio": 7,
     "centros": [
@@ -438,6 +500,23 @@ const MESAS = {
       [
         1084.6,
         281.3
+      ]
+    ]
+  },
+  "sala-15": {
+    "radio": 7,
+    "centros": [
+      [
+        958,
+        134
+      ],
+      [
+        1002,
+        130
+      ],
+      [
+        990,
+        164
       ]
     ]
   }

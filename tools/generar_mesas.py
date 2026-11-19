@@ -81,7 +81,7 @@ def main():
         ordenadas = [m for f in filas for m in sorted(f)]
         resultado[clave] = {"radio": RADIO, "centros": [[round(x, 1), round(y, 1)] for x, y in ordenadas]}
 
-    resultado = dict(sorted(resultado.items(), key=lambda kv: int(kv[0].split("-")[1])))
+    resultado = dict(sorted(resultado.items(), key=lambda kv: [int(t) if t.isdigit() else t for t in kv[0].split("-")]))
     for k, v in resultado.items():
         print(f"{k:8s} -> {len(v['centros'])} mesas")
     print(f"Total: {sum(len(v['centros']) for v in resultado.values())} mesas; {descartadas} descartadas")
