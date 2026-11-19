@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """
-Genera js/mesas.js: posición fija de las mesas de cada sala marcada con
-`mesas: true` en js/data.js.
+Genera js/mesas.js a partir de las marcas de tools/marcas_mesas.json.
 
-Fijar las posiciones es necesario para las reservas: cada mesa tiene un
-identificador estable ("sala-8#2" = mesa 2 de la Sala 8) que comparten el
-navegador y el servidor. La mesa N es la N-ésima en orden de lectura
-(de arriba abajo y de izquierda a derecha).
+Cada marca es un cuadrado rojo dibujado sobre las imágenes de referencia: su
+posición es la de una mesa y el número de marcas de una sala es su número de
+mesas. Cada marca se asigna a la sala (con `mesas: true` en js/data.js) cuya
+zona la contiene; las que caen fuera de esas salas (pasillos, ingreso,
+semilleros, etc.) se descartan. Una marca a pocos píxeles del borde de una sala
+se asigna a esa sala.
+
+Identificador estable de cada mesa: "sala-8#2" = mesa 2 de la Sala 8, siendo la
+N-ésima en orden de lectura (de arriba abajo y de izquierda a derecha).
 
 Uso:  python3 tools/generar_mesas.py
-Requiere: playwright (Chromium). Si cambias salas o mesas, vuelve a ejecutarlo;
-las reservas de mesas que ya no existan se descartan al iniciar el servidor.
+Requiere: playwright (Chromium). Las reservas de mesas que ya no existan se
+descartan al iniciar el servidor.
 """
 
 import json
@@ -19,25 +23,72 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 RAIZ = Path(__file__).resolve().parent.parent
+MARCAS = RAIZ / "tools" / "marcas_mesas.json"
 SALIDA = RAIZ / "js" / "mesas.js"
+RADIO = 7  # mismo tamaño para todas las mesas (unidades del plano)
+TOLERANCIA = 20  # px: distancia máxima de una marca al borde de una sala
+TOLERANCIA_FILA = 8  # px: marcas con la misma y (±) cuentan como una fila
+
+JS_ASIGNAR = """([marcas, tol]) => {
+  const ctx = document.createElement('canvas').getContext('2d');
+  const res = {};
+  for (const piso of PISOS) {
+    const salas = piso.salas.filter(s => s.mesas && s.d).map(s => ({ s, P: new Path2D(s.d) }));
+    const id = s => normalizar(s.nombre).replace(/[^a-z0-9]+/g, '-');
+    const en = (x, y) => (salas.find(({ P }) => ctx.isPointInPath(P, x, y)) || {}).s;
+    for (const [x, y] of marcas[piso.id] || []) {
+      let sala = en(x, y);
+      for (let r = 2; !sala && r <= tol; r += 2)
+        for (let a = 0; a < 16 && !sala; a++)
+          sala = en(x + r * Math.cos(a * Math.PI / 8), y + r * Math.sin(a * Math.PI / 8));
+      (res[sala ? id(sala) : '_fuera' + piso.id] ??= []).push([x, y]);
+    }
+  }
+  return res;
+}"""
 
 
 def main():
-    resultado = {}
+    marcas = json.loads(MARCAS.read_text(encoding="utf-8"))
+    marcas.pop("_nota", None)
     with sync_playwright() as p:
         nav = p.chromium.launch(args=["--no-sandbox"])
         pag = nav.new_page()
         pag.goto((RAIZ / "index.html").as_uri())
-        for nombre in pag.evaluate("BibliotecaHerramientas.salasConMesas()"):
-            r = pag.evaluate("n => BibliotecaHerramientas.calcularMesasDeSala(n)", nombre)
-            centros = [[round(x, 1), round(y, 1)] for x, y in r["centros"]]
-            resultado[r["id"]] = {"radio": r["radio"], "centros": centros}
-            print(f"{nombre:8s} -> {len(centros)} mesas (radio {r['radio']})")
+        # normalizar() vive dentro de app.js; se replica aquí para no exponerla.
+        pag.evaluate(
+            "() => { window.normalizar = t => t.normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLowerCase(); }"
+        )
+        asignadas = pag.evaluate(JS_ASIGNAR, [marcas, TOLERANCIA])
         nav.close()
+
+    resultado, descartadas = {}, 0
+    for clave, lista in asignadas.items():
+        if clave.startswith("_fuera"):
+            descartadas += len(lista)
+            print(f"piso {clave[-1]}: {len(lista)} marcas fuera de las salas 1-14 (descartadas)")
+            continue
+        # Orden de lectura: por filas (y con tolerancia) y luego de izquierda a derecha.
+        lista.sort(key=lambda m: m[1])
+        filas, actual = [], [lista[0]]
+        for m in lista[1:]:
+            if abs(m[1] - actual[0][1]) <= TOLERANCIA_FILA:
+                actual.append(m)
+            else:
+                filas.append(actual)
+                actual = [m]
+        filas.append(actual)
+        ordenadas = [m for f in filas for m in sorted(f)]
+        resultado[clave] = {"radio": RADIO, "centros": [[round(x, 1), round(y, 1)] for x, y in ordenadas]}
+
+    resultado = dict(sorted(resultado.items(), key=lambda kv: int(kv[0].split("-")[1])))
+    for k, v in resultado.items():
+        print(f"{k:8s} -> {len(v['centros'])} mesas")
+    print(f"Total: {sum(len(v['centros']) for v in resultado.values())} mesas; {descartadas} descartadas")
 
     cuerpo = json.dumps(resultado, indent=2)
     SALIDA.write_text(
-        "/* Generado por tools/generar_mesas.py. Mesa N = N-ésimo centro en orden de lectura. */\n"
+        "/* Generado por tools/generar_mesas.py desde tools/marcas_mesas.json. Mesa N = N-ésimo centro en orden de lectura. */\n"
         f"const MESAS = {cuerpo};\n",
         encoding="utf-8",
     )

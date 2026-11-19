@@ -12,7 +12,7 @@
  *   lineas:  (opcional) parte el nombre en varias líneas dentro del plano.
  *   fuente:  (opcional) tamaño del texto en el plano.
  *   mesas:   (opcional) true = en el plano de la sala se dibujan mesas
- *            hexagonales con 6 sillas (mínimo 4). Las salas de investigación,
+ *            hexagonales con 6 sillas. Las salas de investigación,
  *            cafetería, TIC, auditorio, cómputo, tribal, ludoteca, procesos
  *            técnicos, jefatura, secretaría y semilleros no llevan mesas.
  */

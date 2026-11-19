@@ -80,7 +80,7 @@ python3 tools/generar_planos.py
 
 Requiere `numpy`, `opencv-python` y `pillow`.
 
-Si cambias salas o activas `mesas: true` en otra sala de `js/data.js`:
+Las mesas están en las posiciones de los cuadrados rojos marcados sobre las imágenes de referencia (`tools/marcas_mesas.json`; solo cuentan los que caen dentro de las Salas 1–14, y solo se ven en el plano de cada sala). Para cambiarlas, edita ese archivo o las salas de `js/data.js` y ejecuta:
 
 ```
 python3 tools/generar_mesas.py
