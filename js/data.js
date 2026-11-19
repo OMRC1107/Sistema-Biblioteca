@@ -149,7 +149,7 @@ const PISOS = [
         fuente: 11,
         descripcion: "Área de procesamiento técnico del material bibliográfico.",
       },
-      { nombre: "Sala 13", tipo: "sala", mesas: true, d: R(578, 283, 62, 47), c: [609, 307] },
+      { nombre: "Sala 13", tipo: "sala", mesas: true, d: R(578, 250, 62, 80), c: [609, 290] },
       {
         nombre: "Jefatura",
         tipo: "administrativo",
