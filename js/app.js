@@ -90,6 +90,7 @@
     mesaSel: null,
     mesaMensaje: "",
     mesaOcupada: false,
+    horas: 2, // duración elegida para reservar
     consulta: "",
     resultados: [],
     indiceActivo: 0,
@@ -303,6 +304,18 @@
     mia: "reservada por ti",
     desconocido: "sin información de reservas",
   };
+  const DURACIONES = [1, 2, 3, 4];
+
+  const formatoHora = (fecha) =>
+    fecha.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit", hour12: true });
+
+  // Hora en que terminaría una reserva hecha ahora (máximo las 23:59 del mismo día).
+  const finPrevisto = (horas) => {
+    const ahora = new Date();
+    const finDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59);
+    return new Date(Math.min(ahora.getTime() + horas * 3600 * 1000, finDia.getTime()));
+  };
+
   const INSIGNIA = { libre: "✓", reservada: "✕", mia: "★" };
 
   // Mesa hexagonal con 6 sillas, vista desde arriba. Unidad = radio total (1).
@@ -560,8 +573,14 @@
       const numero = Number(id.split("#")[1]);
       const situacion = Cuenta.estadoMesa(id);
       const textoSituacion = { libre: "Disponible", reservada: "Reservada", mia: "Reservada por ti" }[situacion];
+      const hasta = Cuenta.hastaMesa(id);
       partes.push(
-        crear("p", { class: "mesa-estado" }, crear("strong", { text: `Mesa ${numero}` }), ` · ${textoSituacion}`)
+        crear(
+          "p",
+          { class: "mesa-estado" },
+          crear("strong", { text: `Mesa ${numero}` }),
+          ` · ${textoSituacion}${hasta && situacion !== "libre" ? ` hasta las ${formatoHora(hasta)}` : ""}`
+        )
       );
 
       const acciones = crear("div", { class: "acciones" });
@@ -575,12 +594,36 @@
           })
         );
       } else if (situacion === "libre") {
+        const nota = crear("p", { class: "mesa-nota", id: "mesa-fin" });
+        const actualizarNota = () => {
+          nota.textContent = `Empieza ahora y termina a las ${formatoHora(finPrevisto(estado.horas))}.`;
+        };
+        const selector = crear(
+          "select",
+          {
+            id: "mesa-horas",
+            onchange: (e) => {
+              estado.horas = Number(e.target.value);
+              actualizarNota();
+            },
+          },
+          ...DURACIONES.map((h) =>
+            crear("option", { value: h, selected: h === estado.horas, text: `${h} ${h === 1 ? "hora" : "horas"}` })
+          )
+        );
+        actualizarNota();
+        partes.push(crear("label", { class: "campo-horas" }, crear("span", { text: "Duración" }), selector), nota);
         acciones.append(
           crear("button", {
             class: "boton primario",
             type: "button",
             text: "Reservar esta mesa",
-            onclick: (e) => accionMesa(e.currentTarget, () => Cuenta.reservar(id), `Mesa ${numero} reservada.`),
+            onclick: (e) =>
+              accionMesa(
+                e.currentTarget,
+                () => Cuenta.reservar(id, estado.horas),
+                `Mesa ${numero} reservada hasta las ${formatoHora(finPrevisto(estado.horas))}.`
+              ),
           })
         );
       } else if (situacion === "mia") {
@@ -926,6 +969,15 @@
       if (estado.seleccion) renderSala();
     }, 150);
   });
+
+  // Lo que usa el asistente (js/asistente_ui.js).
+  window.BibliotecaApp = {
+    salas: salas.map((s) => ({ id: s.id, nombre: s.nombre, piso: s.piso, pisoNombre: s.pisoNombre, tipo: s.tipo })),
+    mesasDe,
+    seleccionable: (id) => Boolean(buscarSala(id) && seleccionable(buscarSala(id))),
+    seleccionar,
+    cambiarPiso,
+  };
 
   /* ---------- Inicio ---------- */
 

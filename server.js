@@ -45,6 +45,35 @@ const cargarMesasValidas = () => {
   return ids;
 };
 
+// Nombre de cada sala (js/data.js), para el registro de reservas: «sala-8» -> «Sala 8».
+const cargarNombresSala = () => {
+  const fuente = fs.readFileSync(path.join(RAIZ, "js", "data.js"), "utf8");
+  const pisos = vm.runInNewContext(`${fuente}\n;PISOS`, Object.create(null), { timeout: 1000 });
+  const idDe = (nombre) =>
+    nombre
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-");
+  const nombres = new Map();
+  for (const piso of pisos) for (const sala of piso.salas) nombres.set(idDe(sala.nombre), sala.nombre);
+  return nombres;
+};
+
+/* ---------- Duración de las reservas ---------- */
+
+const HORAS_MIN = 1;
+const HORAS_MAX = 4;
+const HORAS_PREDETERMINADAS = 2;
+const MINUTOS_MIN_RESTANTES = 15; // no se reserva si faltan menos minutos para el fin del día
+
+// La reserva empieza ahora y dura `horas`, pero nunca pasa de las 23:59 del mismo día.
+const calcularFin = (ahora, horas) => {
+  const finDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 0);
+  return new Date(Math.min(ahora.getTime() + horas * 60 * 60 * 1000, finDia.getTime()));
+};
+
 /* ---------- Contraseñas ---------- */
 
 const hashClave = async (clave, sal = crypto.randomBytes(16)) => {
@@ -176,7 +205,7 @@ const servirEstatico = (req, res, url) => {
  * @param {object} opciones.almacen      consultas de db.js (crearAlmacen)
  * @param {Set<string>} [opciones.mesasValidas]
  */
-const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas() }) => {
+const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSala = cargarNombresSala() }) => {
   const sesiones = new Map(); // token -> { codigo, nombre, expira }
   const intentos = new Map(); // clave -> { n, hasta }
 
@@ -244,7 +273,7 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas() }) => {
     let mia = null;
     for (const r of await almacen.reservas()) {
       const esMia = codigo !== null && r.codigo === codigo;
-      reservas[r.mesa] = { mia: esMia };
+      reservas[r.mesa] = { mia: esMia, hasta: r.hasta.toISOString() };
       if (esMia) mia = r.mesa;
     }
     return { reservas, mia };
@@ -334,7 +363,23 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas() }) => {
       const mesa = cuerpo.mesa;
       if (typeof mesa !== "string" || !mesasValidas.has(mesa)) return error(res, 404, "Esa mesa no existe.");
 
-      const r = await almacen.reservar(mesa, s.codigo);
+      const horas = cuerpo.horas === undefined ? HORAS_PREDETERMINADAS : cuerpo.horas;
+      if (!Number.isInteger(horas) || horas < HORAS_MIN || horas > HORAS_MAX) {
+        return error(res, 400, `La duración debe ser de ${HORAS_MIN} a ${HORAS_MAX} horas.`);
+      }
+      const ahora = new Date();
+      const hasta = calcularFin(ahora, horas);
+      if (hasta.getTime() - ahora.getTime() < MINUTOS_MIN_RESTANTES * 60 * 1000) {
+        return error(res, 409, "Ya es muy tarde para reservar hoy: las reservas terminan a las 23:59.");
+      }
+
+      const [salaId, numero] = mesa.split("#");
+      const r = await almacen.reservar(mesa, s.codigo, {
+        sala: nombresSala.get(salaId) || salaId,
+        numero: Number(numero),
+        hasta,
+        ahora,
+      });
       if (r.ok) return responder(res, 201, await estadoReservas(s.codigo));
       if (r.motivo === "propia") return error(res, 409, "Ya reservaste esta mesa.");
       if (r.motivo === "ocupada") return error(res, 409, "Esa mesa ya está reservada.");
@@ -360,7 +405,8 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas() }) => {
       const r = await almacen.reservaDeMesa(mesa);
       if (!r) return error(res, 404, "Esa mesa no tiene reserva.");
       if (r.codigo !== s.codigo) return error(res, 403, "Solo puedes quitar tus propias reservas.");
-      await almacen.liberar(mesa, s.codigo);
+      const [salaId, numero] = mesa.split("#");
+      await almacen.liberar(mesa, s.codigo, { sala: nombresSala.get(salaId) || salaId, numero: Number(numero) });
       return responder(res, 200, await estadoReservas(s.codigo));
     }
 
@@ -439,4 +485,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { crearServidor, cargarMesasValidas };
+module.exports = { crearServidor, cargarMesasValidas, cargarNombresSala };

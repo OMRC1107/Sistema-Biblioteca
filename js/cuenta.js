@@ -81,9 +81,10 @@ const Cuenta = (() => {
     avisar();
   };
 
-  const reservar = async (mesa) => {
+  // horas: de 1 a 4 (el servidor usa 2 si no se indica). La reserva empieza ahora.
+  const reservar = async (mesa, horas) => {
     try {
-      aplicarReservas(await api("POST", "/api/reservas", { mesa }));
+      aplicarReservas(await api("POST", "/api/reservas", { mesa, horas }));
       avisar();
     } catch (e) {
       await refrescar(); // por si otra persona se adelantó
@@ -107,6 +108,12 @@ const Cuenta = (() => {
     } finally {
       await refrescar();
     }
+  };
+
+  // Hora de fin de la reserva de una mesa (Date) o null.
+  const hastaMesa = (id) => {
+    const r = estado.reservas[id];
+    return r && r.hasta ? new Date(r.hasta) : null;
   };
 
   // "libre" | "reservada" | "mia" | "desconocido" (sin servidor)
@@ -214,5 +221,5 @@ const Cuenta = (() => {
     });
   };
 
-  return { estado, suscribir, refrescar, reservar, liberar, salir, estadoMesa, abrirDialogo, iniciar };
+  return { estado, suscribir, refrescar, reservar, liberar, salir, estadoMesa, hastaMesa, abrirDialogo, iniciar };
 })();

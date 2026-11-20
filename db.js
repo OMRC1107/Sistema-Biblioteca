@@ -109,6 +109,15 @@ const sentenciasDelEsquema = () =>
     .map((s) => s.trim())
     .filter(Boolean);
 
+/* ---------- Fechas (hora local del servidor, sin zona: se guardan tal cual) ---------- */
+
+const dos = (n) => String(n).padStart(2, "0");
+const sqlFecha = (d) => `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
+const sqlHora = (d) => `${dos(d.getHours())}:${dos(d.getMinutes())}:${dos(d.getSeconds())}`;
+const sqlFechaHora = (d) => `${sqlFecha(d)} ${sqlHora(d)}`;
+// mysql2 devuelve Date; el adaptador de pruebas (SQLite) devuelve texto «AAAA-MM-DD HH:MM:SS».
+const aDate = (v) => (v instanceof Date ? v : new Date(String(v).replace(" ", "T")));
+
 const ERRORES_ESPERADOS = new Set(["ER_DUP_ENTRY", "ER_NO_REFERENCED_ROW_2"]);
 
 // Cualquier otro fallo (base caída, credenciales, etc.) se informa como 503.
@@ -135,6 +144,15 @@ const crearAlmacen = (pool) => {
     async inicializar() {
       try {
         for (const sentencia of sentenciasDelEsquema()) await pool.query(sentencia);
+        // Bases creadas con la versión anterior: la tabla reservas no tenía «hasta».
+        // Las reservas antiguas quedan con una fecha vencida y se limpian solas.
+        try {
+          await pool.query(
+            "ALTER TABLE reservas ADD COLUMN hasta DATETIME NOT NULL DEFAULT '2000-01-01 00:00:00'"
+          );
+        } catch (e) {
+          if (e.code !== "ER_DUP_FIELDNAME" && !/duplicate column/i.test(String(e.message))) throw e;
+        }
       } catch (e) {
         throw comoErrorServicio(e);
       }
@@ -156,9 +174,16 @@ const crearAlmacen = (pool) => {
       }
     },
 
-    // [{ mesa, codigo }, ...]
-    async reservas() {
-      return consultar("SELECT mesa, codigo FROM reservas");
+    // Borra las reservas cuya hora de fin ya pasó (el historial no se toca).
+    async purgarVencidas(ahora = new Date()) {
+      await consultar("DELETE FROM reservas WHERE hasta <= ?", [sqlFechaHora(ahora)]);
+    },
+
+    // [{ mesa, codigo, hasta: Date }, ...] solo reservas vigentes.
+    async reservas(ahora = new Date()) {
+      await this.purgarVencidas(ahora);
+      const filas = await consultar("SELECT mesa, codigo, hasta FROM reservas");
+      return filas.map((f) => ({ mesa: f.mesa, codigo: f.codigo, hasta: aDate(f.hasta) }));
     },
 
     async reservaDeMesa(mesa) {
@@ -174,10 +199,22 @@ const crearAlmacen = (pool) => {
     // { ok: true } o { ok: false, motivo: "propia" | "ocupada" | "limite" | "sin_cuenta", actual? }
     // La unicidad la garantiza la base de datos (PRIMARY KEY de mesa y UNIQUE de codigo),
     // así que dos peticiones simultáneas nunca pueden reservar la misma mesa.
-    async reservar(mesa, codigo) {
+    // info: { sala: "Sala 8", numero: 3, hasta: Date, ahora: Date } (para el historial).
+    async reservar(mesa, codigo, info = {}) {
+      const ahora = info.ahora || new Date();
+      const hasta = info.hasta || new Date(ahora.getTime() + 2 * 60 * 60 * 1000);
+      const [salaId, num] = mesa.split("#");
+      const sala = info.sala || salaId;
+      const numero = info.numero || Number(num) || 0;
+
+      await this.purgarVencidas(ahora);
       try {
-        await consultar("INSERT INTO reservas (mesa, codigo) VALUES (?, ?)", [mesa, codigo]);
-        return { ok: true };
+        await consultar("INSERT INTO reservas (mesa, codigo, desde, hasta) VALUES (?, ?, ?, ?)", [
+          mesa,
+          codigo,
+          sqlFechaHora(ahora),
+          sqlFechaHora(hasta),
+        ]);
       } catch (e) {
         if (e.code === "ER_NO_REFERENCED_ROW_2") return { ok: false, motivo: "sin_cuenta" };
         if (e.code !== "ER_DUP_ENTRY") throw e;
@@ -185,14 +222,39 @@ const crearAlmacen = (pool) => {
         if (existente) return { ok: false, motivo: existente.codigo === codigo ? "propia" : "ocupada" };
         return { ok: false, motivo: "limite", actual: await this.reservaDePersona(codigo) };
       }
+
+      // Registro de la reserva. Si no se pudiera guardar, se deshace para no dejar reservas sin registro.
+      const mismoDia = sqlFecha(hasta) === sqlFecha(ahora);
+      try {
+        await consultar(
+          "INSERT INTO historial_reservas (codigo, sala, mesa, fecha, hora_inicio, hora_fin) VALUES (?, ?, ?, ?, ?, ?)",
+          [codigo, sala, numero, sqlFecha(ahora), sqlHora(ahora), mismoDia ? sqlHora(hasta) : "23:59:59"]
+        );
+      } catch (e) {
+        await consultar("DELETE FROM reservas WHERE mesa = ?", [mesa]).catch(() => {});
+        throw e;
+      }
+      return { ok: true };
     },
 
-    // true si se quitó. Solo borra la reserva si es de esa persona.
-    async liberar(mesa, codigo) {
+    // true si se quitó. Solo borra la reserva si es de esa persona. Si se quita antes de
+    // tiempo, la hora de fin del registro pasa a ser la hora actual.
+    async liberar(mesa, codigo, info = {}) {
+      const ahora = info.ahora || new Date();
+      const [salaId, num] = mesa.split("#");
       const [res] = await pool.execute("DELETE FROM reservas WHERE mesa = ? AND codigo = ?", [mesa, codigo]).catch((e) => {
         throw comoErrorServicio(e);
       });
-      return res.affectedRows > 0;
+      if (res.affectedRows === 0) return false;
+
+      const filas = await consultar(
+        "SELECT id, hora_fin FROM historial_reservas WHERE codigo = ? AND sala = ? AND mesa = ? AND fecha = ? ORDER BY id DESC LIMIT 1",
+        [codigo, info.sala || salaId, info.numero || Number(num) || 0, sqlFecha(ahora)]
+      );
+      if (filas[0] && sqlHora(ahora) < String(filas[0].hora_fin)) {
+        await consultar("UPDATE historial_reservas SET hora_fin = ? WHERE id = ?", [sqlHora(ahora), filas[0].id]);
+      }
+      return true;
     },
 
     // Elimina reservas de mesas que ya no existen (p. ej. tras regenerar js/mesas.js).
@@ -213,4 +275,4 @@ const crearAlmacen = (pool) => {
   };
 };
 
-module.exports = { cargarEnv, configDesdeEntorno, abrirPool, crearAlmacen };
+module.exports = { cargarEnv, configDesdeEntorno, abrirPool, crearAlmacen, sqlFecha, sqlHora, sqlFechaHora };

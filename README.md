@@ -91,3 +91,14 @@ python3 tools/generar_mesas.py
 ## Seguridad
 
 Las contraseñas se guardan con scrypt y sal propia; la sesión va en una cookie `HttpOnly` + `SameSite=Strict`; las peticiones que modifican datos exigen una cabecera propia (anti-CSRF); la unicidad de cuentas y reservas la garantiza la propia base de datos (claves primarias/únicas); hay bloqueo temporal tras 5 contraseñas erróneas y límite de intentos por IP; solo se sirven `index.html`, `css/` y `js/`. Si lo publicas en internet, ponlo detrás de HTTPS.
+
+
+## Asistente de mesas
+
+El botón «Asistente» (abajo a la derecha) abre un contestador por reglas, sin inteligencia artificial. Entiende preguntas como «¿hay mesas libres en la Sala 8?», «reserva la mesa 3 de la Sala 9 por 3 horas», «¿cuál es mi mesa?», «quita mi reserva», «¿dónde está la Sala 14?» o «¿cómo reservo?». Antes de reservar o quitar una reserva siempre pide confirmación. La lógica está en `js/asistente.js` (con pruebas en `test/asistente.test.js`) y la pantalla en `js/asistente_ui.js`.
+
+## Duración y registro de reservas
+
+- Al reservar se elige la duración (1 a 4 horas, 2 por defecto). La reserva empieza al momento de reservar y termina sola (máximo las 23:59 del mismo día); después la mesa vuelve a estar libre.
+- La tabla `historial_reservas` guarda cada reserva: `sala`, `mesa`, `fecha`, `hora_inicio`, `hora_fin` (y el `codigo` de quien reservó). Si la reserva se quita antes de tiempo, `hora_fin` pasa a ser la hora en que se quitó. Para verla: `SELECT * FROM historial_reservas ORDER BY id DESC;`
+- Si ya tenías la base creada con la versión anterior, al iniciar el servidor se agrega solo la columna `hasta` y se descartan las reservas antiguas (no tenían hora de fin).

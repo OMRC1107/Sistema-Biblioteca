@@ -124,6 +124,24 @@
       </form>
     </dialog>
 
+    <button id="asistente-abrir" class="asistente-abrir" type="button" aria-expanded="false" aria-controls="asistente">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      Asistente
+    </button>
+
+    <section id="asistente" class="asistente" aria-label="Asistente de mesas" hidden>
+      <header class="asistente-cabecera">
+        <strong>Asistente de mesas</strong>
+        <button id="asistente-cerrar" class="asistente-cerrar" type="button" aria-label="Cerrar asistente">✕</button>
+      </header>
+      <div id="asistente-mensajes" class="asistente-mensajes" role="log" aria-live="polite"></div>
+      <form id="asistente-form" class="asistente-form" autocomplete="off">
+        <label class="sr-only" for="asistente-texto">Escribe tu pregunta</label>
+        <input id="asistente-texto" type="text" maxlength="200" placeholder="Ej.: ¿hay mesas libres en la Sala 8?" />
+        <button class="boton primario" type="submit">Enviar</button>
+      </form>
+    </section>
+
     <footer class="pie">
       <p>Haz clic en una sala con mesas del plano o búscala por nombre, número o piso.</p>
     </footer>
@@ -131,7 +149,9 @@
     <script src="js/planos.js"></script>
     <script src="js/data.js"></script>
     <script src="js/mesas.js"></script>
+    <script src="js/asistente.js"></script>
     <script src="js/cuenta.js"></script>
     <script src="js/app.js"></script>
+    <script src="js/asistente_ui.js"></script>
   </body>
 </html>

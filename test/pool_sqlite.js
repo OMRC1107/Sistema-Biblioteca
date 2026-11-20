@@ -12,7 +12,11 @@ const { DatabaseSync } = require("node:sqlite");
 const traducir = (sql) =>
   sql
     .replace(/\)\s*ENGINE=[^;]*$/i, ")")
-    .replace(/UNIQUE KEY\s+\w+\s*\(/gi, "UNIQUE (");
+    .replace(/UNIQUE KEY\s+\w+\s*\(/gi, "UNIQUE (")
+    .replace(/(\w+)\s+INT UNSIGNED\s+NOT NULL AUTO_INCREMENT,/gi, "$1 INTEGER PRIMARY KEY AUTOINCREMENT,")
+    .replace(/PRIMARY KEY \(id\),/gi, "")
+    .replace(/^\s*KEY\s+\w+\s*\([^)]*\)\s*,?\s*$/gim, "")
+    .replace(/,\s*\)\s*$/, ")");
 
 // Traduce los errores de restricción a los códigos de MySQL que espera db.js.
 const comoErrorMysql = (e) => {
