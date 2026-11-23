@@ -300,9 +300,9 @@
 
   const ETIQUETA_ESTADO = {
     libre: "disponible",
-    reservada: "reservada",
-    mia: "reservada por ti",
-    desconocido: "sin información de reservas",
+    reservada: "reportada",
+    mia: "reportada por ti",
+    desconocido: "sin información de reportes",
   };
   const DURACIONES = [1, 2, 3, 4];
 
@@ -541,7 +541,7 @@
       ui.salaMeta.textContent +=
         c.libres === null
           ? ` · ${c.total} mesas de 6 puestos`
-          : ` · ${c.libres} disponibles · ${c.reservadas} reservadas · ${c.total} mesas de 6 puestos`;
+          : ` · ${c.libres} disponibles · ${c.reservadas} reportadas · ${c.total} mesas de 6 puestos`;
     }
 
     ui.salaPlano.replaceChildren(crearSvg("defs", {}, mascara), contenido);
@@ -563,16 +563,16 @@
       partes.push(
         crear("p", {
           class: "mesa-estado",
-          text: "Las reservas necesitan el servidor y la base de datos de la biblioteca. Inícialos con «npm start» (con MySQL encendido) y abre la dirección que muestra.",
+          text: "Los reportes necesitan el servidor y la base de datos de la biblioteca. Inícialos con «npm start» (con MySQL encendido) y abre la dirección que muestra.",
         })
       );
     } else if (!estado.mesaSel) {
-      partes.push(crear("p", { class: "mesa-estado", text: "Elige una mesa del plano para reservarla." }));
+      partes.push(crear("p", { class: "mesa-estado", text: "Elige una mesa del plano para reportarla." }));
     } else {
       const id = estado.mesaSel;
       const numero = Number(id.split("#")[1]);
       const situacion = Cuenta.estadoMesa(id);
-      const textoSituacion = { libre: "Disponible", reservada: "Reservada", mia: "Reservada por ti" }[situacion];
+      const textoSituacion = { libre: "Disponible", reservada: "Reportada", mia: "Reportada por ti" }[situacion];
       const hasta = Cuenta.hastaMesa(id);
       partes.push(
         crear(
@@ -589,7 +589,7 @@
           crear("button", {
             class: "boton primario",
             type: "button",
-            text: "Inicia sesión para reservar",
+            text: "Inicia sesión para reportar",
             onclick: () => Cuenta.abrirDialogo("entrar"),
           })
         );
@@ -617,12 +617,12 @@
           crear("button", {
             class: "boton primario",
             type: "button",
-            text: "Reservar esta mesa",
+            text: "Reportar esta mesa",
             onclick: (e) =>
               accionMesa(
                 e.currentTarget,
                 () => Cuenta.reservar(id, estado.horas),
-                `Mesa ${numero} reservada hasta las ${formatoHora(finPrevisto(estado.horas))}.`
+                `Mesa ${numero} reportada hasta las ${formatoHora(finPrevisto(estado.horas))}.`
               ),
           })
         );
@@ -631,8 +631,8 @@
           crear("button", {
             class: "boton peligro",
             type: "button",
-            text: "Quitar reserva",
-            onclick: (e) => accionMesa(e.currentTarget, () => Cuenta.liberar(id), `Reserva de la mesa ${numero} quitada.`),
+            text: "Quitar reporte",
+            onclick: (e) => accionMesa(e.currentTarget, () => Cuenta.liberar(id), `Reporte de la mesa ${numero} quitado.`),
           })
         );
       } else {
@@ -649,7 +649,7 @@
         crear("button", {
           class: "boton",
           type: "button",
-          text: "Ver mi mesa reservada",
+          text: "Ver mi mesa reportada",
           onclick: () => irAMiMesa(),
         })
       );
@@ -701,7 +701,7 @@
     const c = Cuenta.estado;
     const nodos = [];
     if (c.disponible === false) {
-      nodos.push(crear("span", { class: "cuenta-aviso", text: "Reservas no disponibles (servidor o base de datos sin conexión)" }));
+      nodos.push(crear("span", { class: "cuenta-aviso", text: "Reportes no disponibles (servidor o base de datos sin conexión)" }));
     } else if (c.disponible === true && !c.usuario) {
       nodos.push(
         crear("button", {
@@ -745,7 +745,7 @@
       "div",
       { class: "conteo" },
       crear("div", { class: "conteo-libre" }, crear("strong", { text: String(c.libres) }), crear("span", { text: c.libres === 1 ? "Disponible" : "Disponibles" })),
-      crear("div", { class: "conteo-reservada" }, crear("strong", { text: String(c.reservadas) }), crear("span", { text: c.reservadas === 1 ? "Reservada" : "Reservadas" }))
+      crear("div", { class: "conteo-reservada" }, crear("strong", { text: String(c.reservadas) }), crear("span", { text: c.reservadas === 1 ? "Reportada" : "Reportadas" }))
     );
   };
 
@@ -760,7 +760,7 @@
           {},
           crear("span", { text: piso.nombre }),
           crear("small", {
-            text: c.libres === null ? `${c.total} mesas` : `${c.libres} disponibles · ${c.reservadas} reservadas`,
+            text: c.libres === null ? `${c.total} mesas` : `${c.libres} disponibles · ${c.reservadas} reportadas`,
           })
         );
       });

@@ -111,7 +111,7 @@
 
     const respuestaSinConexion = () => ({
       texto:
-        "Ahora mismo no tengo conexión con el servidor de reservas, así que no puedo saber qué mesas están libres ni reservar. " +
+        "Ahora mismo no tengo conexión con el servidor de reportes, así que no puedo saber qué mesas están libres ni reportar. " +
         "Cuando el servidor esté encendido («npm start» y MySQL) puedes volver a preguntarme.",
     });
 
@@ -171,8 +171,8 @@
 
     const botonesBase = () => [
       { etiqueta: "Mesas libres", decir: "¿Hay mesas libres?" },
-      { etiqueta: "Mi reserva", decir: "¿Cuál es mi reserva?" },
-      { etiqueta: "Cómo reservo", decir: "¿Cómo reservo una mesa?" },
+      { etiqueta: "Mi reporte", decir: "¿Cuál es mi reporte?" },
+      { etiqueta: "Cómo reporto", decir: "¿Cómo reporto una mesa?" },
       { etiqueta: "Salas con mesas", decir: "¿Qué salas tienen mesas?" },
     ];
 
@@ -188,24 +188,24 @@
         "Puedo ayudarte con las mesas de la biblioteca. Por ejemplo:\n" +
         "• «¿Hay mesas libres en la Sala 8?»\n" +
         "• «Quiero una mesa en el piso 2»\n" +
-        "• «Reserva la mesa 3 de la Sala 9 por 3 horas»\n" +
-        "• «¿Cuál es mi mesa?» o «quita mi reserva»\n" +
+        "• «Reporta la mesa 3 de la Sala 9 por 3 horas»\n" +
+        "• «¿Cuál es mi mesa?» o «quita mi reporte»\n" +
         "• «¿Dónde está la Sala 14?»",
       botones: botonesBase(),
     });
 
     const saludo = () => ({
-      texto: "¡Hola! Soy el asistente de mesas. Pregúntame por las mesas libres, una sala, o dime si quieres reservar.",
+      texto: "¡Hola! Soy el asistente de mesas. Pregúntame por las mesas libres, una sala, o dime si quieres reportar.",
       botones: botonesBase(),
     });
 
     const comoReservar = () => ({
       texto:
-        "Reservar una mesa es sencillo:\n" +
+        "Reportar una mesa es sencillo:\n" +
         "1. Inicia sesión (o crea tu cuenta con tu código de 7 cifras).\n" +
         "2. Elige una sala con mesas en el plano y luego una mesa verde.\n" +
-        "3. Escoge la duración (de 1 a 4 horas) y pulsa «Reservar esta mesa».\n" +
-        "También puedes decírmelo aquí: «reserva la mesa 3 de la Sala 8».",
+        "3. Escoge la duración (de 1 a 4 horas) y pulsa «Reportar esta mesa».\n" +
+        "También puedes decírmelo aquí: «reporta la mesa 3 de la Sala 8».",
       botones: [
         { etiqueta: "Iniciar sesión", accion: { tipo: "login", modo: "entrar" } },
         { etiqueta: "Crear cuenta", accion: { tipo: "login", modo: "registro" } },
@@ -217,23 +217,23 @@
       if (/\b(dura|duracion|cuanto tiempo|cuantas horas|hasta que hora|a que hora termina|termina|vence|expira)\b/.test(t)) {
         return {
           texto:
-            "Cada reserva dura de 1 a 4 horas (tú eliges), empieza en el momento de reservar y termina sola: " +
+            "Cada reporte dura de 1 a 4 horas (tú eliges), empieza en el momento de reportar y termina sola: " +
             "después la mesa vuelve a quedar libre. Nunca pasa de las 11:59 p. m. del mismo día. " +
             "Puedes quitarla antes si ya no la necesitas.",
         };
       }
       return {
         texto:
-          "Solo puedes tener una mesa reservada a la vez. Si quieres otra, primero quita la que tienes o espera a que termine. " +
-          "Cada reserva dura de 1 a 4 horas.",
-        botones: [{ etiqueta: "Mi reserva", decir: "¿Cuál es mi reserva?" }],
+          "Solo puedes tener una mesa reportada a la vez. Si quieres otra, primero quita la que tienes o espera a que termine. " +
+          "Cada reporte dura de 1 a 4 horas.",
+        botones: [{ etiqueta: "Mi reporte", decir: "¿Cuál es mi reporte?" }],
       };
     };
 
     const colores = () => ({
       texto:
-        "En el plano de cada sala: verde = mesa disponible (✓), rojo = reservada por otra persona (✕), " +
-        "y rojo con borde y estrella (★) = la mesa que reservaste tú. Las salas sin mesas aparecen atenuadas y no se pueden abrir.",
+        "En el plano de cada sala: verde = mesa disponible (✓), rojo = reportada por otra persona (✕), " +
+        "y rojo con borde y estrella (★) = la mesa que reportaste tú. Las salas sin mesas aparecen atenuadas y no se pueden abrir.",
     });
 
     const capacidad = () => ({
@@ -242,8 +242,8 @@
 
     const registro = () => ({
       texto:
-        "Sí: cada reserva queda guardada en la base de datos con la sala, el número de mesa, la fecha, la hora de inicio y la hora de fin. " +
-        "Si quitas una reserva antes de tiempo, la hora de fin pasa a ser la hora en que la quitaste. " +
+        "Sí: cada reporte queda guardado en la base de datos con la sala, el número de mesa, la fecha, la hora de inicio y la hora de fin. " +
+        "Si quitas un reporte antes de tiempo, la hora de fin pasa a ser la hora en que la quitaste. " +
         "Por ahora no puedo mostrarte tu historial aquí: lo consulta quien administra la base de datos.",
     });
 
@@ -285,12 +285,12 @@
     const fueraDeTema = () => ({
       texto:
         "De eso no tengo información. Solo puedo ayudarte con las mesas y las salas: ver cuáles están libres, " +
-        "encontrar una sala, reservar o quitar tu reserva.",
+        "encontrar una sala, reportar o quitar tu reporte.",
       botones: botonesBase(),
     });
 
     const noEntendi = () => ({
-      texto: "No te entendí bien. Puedes preguntarme, por ejemplo, «¿hay mesas libres en la Sala 8?» o «reserva la mesa 3 de la Sala 9».",
+      texto: "No te entendí bien. Puedes preguntarme, por ejemplo, «¿hay mesas libres en la Sala 8?» o «reporta la mesa 3 de la Sala 9».",
       botones: botonesBase(),
     });
 
@@ -313,17 +313,17 @@
           return {
             texto:
               `La mesa ${mesa} ${de(sala)} está ` +
-              (estado === "libre" ? "libre." : estado === "mia" ? "reservada por ti" + (hasta ? ` hasta las ${formatoHora(hasta)}.` : ".") : "reservada" + (hasta ? ` hasta las ${formatoHora(hasta)}.` : ".")),
-            botones: [botonVer(sala, mesa), ...(estado === "libre" ? [{ etiqueta: "Reservarla", decir: `Reserva la mesa ${mesa} ${de(sala)}` }] : [])],
+              (estado === "libre" ? "libre." : estado === "mia" ? "reportada por ti" + (hasta ? ` hasta las ${formatoHora(hasta)}.` : ".") : "reportada" + (hasta ? ` hasta las ${formatoHora(hasta)}.` : ".")),
+            botones: [botonVer(sala, mesa), ...(estado === "libre" ? [{ etiqueta: "Reportarla", decir: `Reporta la mesa ${mesa} ${de(sala)}` }] : [])],
           };
         }
         const c = contar([sala]);
         const libres = libresDe(sala);
-        const botones = [botonVer(sala), ...libres.slice(0, 4).map((n) => ({ etiqueta: `Reservar mesa ${n}`, decir: `Reserva la mesa ${n} ${de(sala)}` }))];
+        const botones = [botonVer(sala), ...libres.slice(0, 4).map((n) => ({ etiqueta: `Reportar mesa ${n}`, decir: `Reporta la mesa ${n} ${de(sala)}` }))];
         return {
           texto:
             `${sala.nombre} (${sala.pisoNombre}): ${plural(c.libres, "mesa libre", "mesas libres")} y ` +
-            `${plural(c.reservadas, "reservada", "reservadas")}, de ${c.total} en total.` +
+            `${plural(c.reservadas, "reportada", "reportadas")}, de ${c.total} en total.` +
             (libres.length ? `\nLibres: ${lista(libres.map((n) => `mesa ${n}`))}.` : "\nPor ahora no queda ninguna libre."),
           botones,
         };
@@ -350,7 +350,7 @@
       const mejor = mejorSala(conMesas);
       return {
         texto:
-          `En toda la biblioteca hay ${plural(c.libres, "mesa libre", "mesas libres")} de ${c.total} (${c.reservadas} reservadas).\n` +
+          `En toda la biblioteca hay ${plural(c.libres, "mesa libre", "mesas libres")} de ${c.total} (${c.reservadas} reportadas).\n` +
           porPiso.join("\n") +
           (mejor ? `\nLa sala con más mesas libres ahora es ${mejor.nombre} (${libresDe(mejor).length}).` : ""),
         botones: [...(mejor ? [botonVer(mejor)] : []), ...pisos.map((p) => ({ etiqueta: `Piso ${p}`, decir: `Mesas libres en el piso ${p}` }))],
@@ -363,7 +363,7 @@
     };
 
     const salaSinMesas = (sala) => ({
-      texto: `${sala.nombre} está en el ${sala.pisoNombre}, pero no tiene mesas para reservar, por eso no se puede abrir su plano.`,
+      texto: `${sala.nombre} está en el ${sala.pisoNombre}, pero no tiene mesas para reportar, por eso no se puede abrir su plano.`,
       botones: [{ etiqueta: "Salas con mesas", decir: "¿Qué salas tienen mesas?" }],
     });
 
@@ -380,7 +380,7 @@
         texto:
           `${aviso}La sala con más mesas libres${piso ? ` en el piso ${piso}` : ""} ahora es ${mejor.nombre} ` +
           `(${mejor.pisoNombre}): ${libres.length} de ${mesasDe(mejor)}.`,
-        botones: [botonVer(mejor), { etiqueta: "Reservar ahí", decir: `Quiero reservar en ${art(mejor)}` }],
+        botones: [botonVer(mejor), { etiqueta: "Reportar ahí", decir: `Quiero reportar en ${art(mejor)}` }],
       };
     };
 
@@ -428,14 +428,14 @@
       if (c.disponible === false) return respuestaSinConexion();
       if (!c.usuario) {
         return {
-          texto: "Para ver tu reserva primero inicia sesión.",
+          texto: "Para ver tu reporte primero inicia sesión.",
           botones: [{ etiqueta: "Iniciar sesión", accion: { tipo: "login", modo: "entrar" } }],
         };
       }
       if (!c.mia) {
         return {
-          texto: "No tienes ninguna mesa reservada en este momento.",
-          botones: [{ etiqueta: "Reservar una mesa", decir: "Quiero reservar una mesa" }],
+          texto: "No tienes ninguna mesa reportada en este momento.",
+          botones: [{ etiqueta: "Reportar una mesa", decir: "Quiero reportar una mesa" }],
         };
       }
       const [salaId, n] = c.mia.split("#");
@@ -444,10 +444,10 @@
       return {
         texto:
           `Tu mesa es la ${n} de la ${sala ? sala.nombre : salaId}${sala ? ` (${sala.pisoNombre})` : ""}` +
-          (hasta ? `, reservada hasta las ${formatoHora(hasta)}.` : "."),
+          (hasta ? `, reportada hasta las ${formatoHora(hasta)}.` : "."),
         botones: [
           ...(sala ? [botonVer(sala, Number(n))] : []),
-          { etiqueta: "Quitar mi reserva", decir: "Quita mi reserva" },
+          { etiqueta: "Quitar mi reporte", decir: "Quita mi reporte" },
         ],
       };
     };
@@ -465,22 +465,22 @@
     const reservar = ({ sala, piso, mesa, horas }) => {
       const c = cuenta();
       if (c.disponible === false || c.disponible === null) return respuestaSinConexion();
-      if (!c.usuario) return pedirSesion("Para reservar una mesa necesitas iniciar sesión.");
+      if (!c.usuario) return pedirSesion("Para reportar una mesa necesitas iniciar sesión.");
 
       if (c.mia) {
         const [salaId, n] = c.mia.split("#");
         const propia = salas.find((s) => s.id === salaId);
         return {
           texto:
-            `Ya tienes la mesa ${n} de la ${propia ? propia.nombre : salaId}. Solo puedes tener una reserva a la vez; ` +
-            "quítala si quieres apartar otra.",
-          botones: [{ etiqueta: "Quitar mi reserva", decir: "Quita mi reserva" }],
+            `Ya tienes la mesa ${n} de la ${propia ? propia.nombre : salaId}. Solo puedes tener un reporte a la vez; ` +
+            "quítalo si quieres reportar otra.",
+          botones: [{ etiqueta: "Quitar mi reporte", decir: "Quita mi reporte" }],
         };
       }
 
       const h = horas || memoria.horas;
       if (h < 1 || h > 4) {
-        return { texto: "Las reservas duran de 1 a 4 horas. ¿Cuántas horas quieres?", botones: [1, 2, 3, 4].map((x) => ({ etiqueta: plural(x, "hora", "horas"), decir: `por ${x} horas` })) };
+        return { texto: "Los reportes duran de 1 a 4 horas. ¿Cuántas horas quieres?", botones: [1, 2, 3, 4].map((x) => ({ etiqueta: plural(x, "hora", "horas"), decir: `por ${x} horas` })) };
       }
       memoria.horas = h;
 
@@ -492,7 +492,7 @@
         memoria.esperandoMesa = null;
         return {
           texto: `¿En qué sala? La que más mesas libres tiene${piso ? ` en el piso ${piso}` : ""} es ${art(mejor)} (${libresDe(mejor).length} libres).`,
-          botones: [mejor, ...otras].map((s) => ({ etiqueta: s.nombre, decir: `Quiero reservar en ${art(s)}` })),
+          botones: [mejor, ...otras].map((s) => ({ etiqueta: s.nombre, decir: `Quiero reportar en ${art(s)}` })),
         };
       }
 
@@ -503,13 +503,13 @@
           const mejor = mejorSala(conMesas.filter((s) => s !== sala));
           return {
             texto: `En ${art(sala)} no queda ninguna mesa libre.` + (mejor ? ` ${art(mejor)} tiene ${libresDe(mejor).length}.` : ""),
-            botones: mejor ? [{ etiqueta: mejor.nombre, decir: `Quiero reservar en ${art(mejor)}` }] : [],
+            botones: mejor ? [{ etiqueta: mejor.nombre, decir: `Quiero reportar en ${art(mejor)}` }] : [],
           };
         }
         memoria.esperandoMesa = sala;
         return {
           texto: `¿Qué mesa ${de(sala)}? Libres: ${lista(libres.map(String))}.`,
-          botones: [botonVer(sala), ...libres.slice(0, 8).map((n) => ({ etiqueta: `Mesa ${n}`, decir: `Reserva la mesa ${n} ${de(sala)}` }))],
+          botones: [botonVer(sala), ...libres.slice(0, 8).map((n) => ({ etiqueta: `Mesa ${n}`, decir: `Reporta la mesa ${n} ${de(sala)}` }))],
         };
       }
 
@@ -523,9 +523,9 @@
         const libres = libresDe(sala);
         return {
           texto:
-            `La mesa ${mesa} ${de(sala)} ya está reservada${hasta ? ` hasta las ${formatoHora(hasta)}` : ""}.` +
+            `La mesa ${mesa} ${de(sala)} ya está reportada${hasta ? ` hasta las ${formatoHora(hasta)}` : ""}.` +
             (libres.length ? ` Libres: ${lista(libres.map(String))}.` : " No queda ninguna libre en esa sala."),
-          botones: libres.slice(0, 6).map((n) => ({ etiqueta: `Mesa ${n}`, decir: `Reserva la mesa ${n} ${de(sala)}` })),
+          botones: libres.slice(0, 6).map((n) => ({ etiqueta: `Mesa ${n}`, decir: `Reporta la mesa ${n} ${de(sala)}` })),
         };
       }
 
@@ -533,10 +533,10 @@
       memoria.esperandoMesa = null;
       return {
         texto:
-          `¿Reservo la mesa ${mesa} ${de(sala)} por ${plural(h, "hora", "horas")}? ` +
+          `¿Reporto la mesa ${mesa} ${de(sala)} por ${plural(h, "hora", "horas")}? ` +
           `Empezaría ahora y terminaría a las ${formatoHora(finDeReserva(h))}.`,
         botones: [
-          { etiqueta: "Sí, reservar", decir: "sí" },
+          { etiqueta: "Sí, reportar", decir: "sí" },
           { etiqueta: "No", decir: "no" },
         ],
       };
@@ -545,13 +545,13 @@
     const quitar = () => {
       const c = cuenta();
       if (c.disponible === false || c.disponible === null) return respuestaSinConexion();
-      if (!c.usuario) return pedirSesion("Para quitar una reserva primero inicia sesión.");
-      if (!c.mia) return { texto: "No tienes ninguna reserva para quitar." };
+      if (!c.usuario) return pedirSesion("Para quitar un reporte primero inicia sesión.");
+      if (!c.mia) return { texto: "No tienes ningún reporte para quitar." };
       const [salaId, n] = c.mia.split("#");
       const sala = salas.find((s) => s.id === salaId);
       memoria.pendiente = { tipo: "quitar", mesaId: c.mia };
       return {
-        texto: `¿Quito tu reserva de la mesa ${n} de la ${sala ? sala.nombre : salaId}?`,
+        texto: `¿Quito tu reporte de la mesa ${n} de la ${sala ? sala.nombre : salaId}?`,
         botones: [
           { etiqueta: "Sí, quitarla", decir: "sí" },
           { etiqueta: "No", decir: "no" },
@@ -566,17 +566,21 @@
         // El estado pudo cambiar mientras tanto (otra persona se adelantó).
         if (estadoMesa(pendiente.mesaId) !== "libre") {
           const [salaId, n] = pendiente.mesaId.split("#");
-          return { texto: `Alguien acaba de reservar la mesa ${n} de esa sala. ¿Quieres elegir otra?`, botones: [{ etiqueta: "Ver mesas libres", decir: `Mesas libres en la sala ${salaId.replace("sala-", "")}` }] };
+          return { texto: `Alguien acaba de reportar la mesa ${n} de esa sala. ¿Quieres elegir otra?`, botones: [{ etiqueta: "Ver mesas libres", decir: `Mesas libres en la sala ${salaId.replace("sala-", "")}` }] };
         }
-        return { texto: "Reservando…", ejecutar: { tipo: "reservar", mesaId: pendiente.mesaId, horas: pendiente.horas } };
+        return { texto: "Reportando…", ejecutar: { tipo: "reservar", mesaId: pendiente.mesaId, horas: pendiente.horas } };
       }
-      return { texto: "Quitando tu reserva…", ejecutar: { tipo: "quitar", mesaId: pendiente.mesaId } };
+      return { texto: "Quitando tu reporte…", ejecutar: { tipo: "quitar", mesaId: pendiente.mesaId } };
     };
 
     /* ----- Interpretación ----- */
 
+    // Se entiende «reportar» igual que «reservar» (las reglas de abajo usan una sola raíz).
+    const equivalencias = (t) =>
+      t.replace(/\breportes\b/g, "reservas").replace(/\breporte\b/g, "reserva").replace(/\breport(?=\w)/g, "reserv");
+
     const interpretar = (entrada) => {
-      const t = normalizar(entrada);
+      const t = equivalencias(normalizar(entrada));
       const pendiente = memoria.pendiente;
       memoria.pendiente = null;
 
@@ -624,8 +628,8 @@
       if (hay(/\bcomo\b.*\b(reserv\w*|apart\w*|separ\w*|uso|funciona|hago)\b/) || hay(/\b(pasos|instrucciones|tutorial)\b.*\b(reserv\w*|mesa)\b/)) return comoReservar();
       if (hay(/\bcomo\b.*\b(cancel\w*|quit\w*|liber\w*|anul\w*|elimin\w*|borr\w*)\b/)) {
         return {
-          texto: "Para quitar tu reserva: abre tu mesa (roja con estrella) y pulsa «Quitar mi reserva», o dime «quita mi reserva».",
-          botones: [{ etiqueta: "Mi reserva", decir: "¿Cuál es mi reserva?" }],
+          texto: "Para quitar tu reporte: abre tu mesa (roja con estrella) y pulsa «Quitar mi reporte», o dime «quita mi reporte».",
+          botones: [{ etiqueta: "Mi reporte", decir: "¿Cuál es mi reporte?" }],
         };
       }
       if (hay(/\b(puedo|pueden|permite|permiten|se puede|limite|maximo|maxima|cuantas)\b.*\b(reserv\w*|apart\w*|mesas)\b.*\b(a la vez|al mismo tiempo|por persona|dos|varias|mas de una|otra|simultane\w*|puedo)\b/) || hay(/\b(una sola|solo una|mas de una|varias mesas|dos mesas|otra mesa)\b/) || hay(/\b(cuanto dura|duracion|cuanto tiempo|cuantas horas|hasta que hora|a que hora termina|cuando termina|cuando vence|cuando expira|tiempo maximo)\b/)) return reglas(t);

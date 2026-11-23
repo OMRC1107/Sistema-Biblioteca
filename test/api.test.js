@@ -129,7 +129,7 @@ test("reservas: reservar, ver desde otra persona, no robar y liberar", async () 
   assert.equal(pool.sql("SELECT * FROM reservas").length, 1);
 
   // Ana no puede repetir ni apartar una segunda mesa a la vez.
-  assert.equal((await ana.pedir("POST", "/api/reservas", { mesa: "sala-8#1" })).datos.error, "Ya reservaste esta mesa.");
+  assert.equal((await ana.pedir("POST", "/api/reservas", { mesa: "sala-8#1" })).datos.error, "Ya reportaste esta mesa.");
   const segunda = await ana.pedir("POST", "/api/reservas", { mesa: "sala-8#2" });
   assert.equal(segunda.estado, 409);
   assert.equal(segunda.datos.actual, "sala-8#1");

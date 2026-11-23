@@ -81,20 +81,20 @@
           const hasta = Cuenta.hastaMesa(accion.mesaId);
           agregar(
             "bot",
-            `Listo: reservaste la mesa ${n} de ${nombreSala(salaId)}${hasta ? ` hasta las ${hora(hasta)}` : ""}${hasta ? "" : "."}`,
+            `Listo: reportaste la mesa ${n} de ${nombreSala(salaId)}${hasta ? ` hasta las ${hora(hasta)}` : ""}${hasta ? "" : "."}`,
             [{ etiqueta: "Ver mi mesa", accion: { tipo: "abrir", salaId, mesaId: accion.mesaId } }]
           );
           App.seleccionar(salaId, accion.mesaId);
         } catch (e) {
-          agregar("bot", `No se pudo reservar: ${e.message}`);
+          agregar("bot", `No se pudo reportar: ${e.message}`);
         }
         break;
       case "quitar":
         try {
           await Cuenta.liberar(accion.mesaId);
-          agregar("bot", "Listo, quité tu reserva. La mesa quedó libre.");
+          agregar("bot", "Listo, quité tu reporte. La mesa quedó libre.");
         } catch (e) {
-          agregar("bot", `No se pudo quitar la reserva: ${e.message}`);
+          agregar("bot", `No se pudo quitar el reporte: ${e.message}`);
         }
         break;
     }

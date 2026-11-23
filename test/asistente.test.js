@@ -47,13 +47,13 @@ test("disponibilidad general, por piso y por sala", () => {
   assert.match(preguntar("cuantas mesas quedan en el segundo piso").texto, /Piso 2/);
 
   const s8 = preguntar("¿Hay mesas libres en la Sala 8?");
-  assert.match(s8.texto, /Sala 8 \(Piso 1\): 12 mesas libres y 0 reservadas, de 12/);
+  assert.match(s8.texto, /Sala 8 \(Piso 1\): 12 mesas libres y 0 reportadas, de 12/);
   assert.deepEqual(s8.botones[0].accion, { tipo: "abrir", salaId: "sala-8", mesaId: null });
 });
 
 test("cuenta las mesas reservadas y menciona las libres", () => {
   const r = preguntar("mesas libres sala 8", { reservadas: { "sala-8#1": true, "sala-8#2": true } });
-  assert.match(r.texto, /10 mesas libres y 2 reservadas/);
+  assert.match(r.texto, /10 mesas libres y 2 reportadas/);
   assert.match(r.texto, /Libres: mesa 3, mesa 4/);
   assert.doesNotMatch(r.texto, /mesa 1,/);
 });
@@ -106,7 +106,7 @@ test("listar salas con mesas", () => {
 test("reservar con sala y mesa pide confirmación y luego ejecuta", () => {
   const a = crear(entorno({ usuario: ana }));
   const pide = a.responder("Reserva la mesa 3 de la Sala 9 por 3 horas");
-  assert.match(pide.texto, /¿Reservo la mesa 3 de la Sala 9 por 3 horas\?.*9:50 p\. m\./);
+  assert.match(pide.texto, /¿Reporto la mesa 3 de la Sala 9 por 3 horas\?.*9:50 p\. m\./);
   assert.equal(pide.ejecutar, undefined);
   assert.deepEqual(a.responder("sí").ejecutar, { tipo: "reservar", mesaId: "sala-9#3", horas: 3 });
   assert.equal(a.responder("sí").ejecutar, undefined); // la confirmación se usa una sola vez
@@ -132,8 +132,8 @@ test("reservar sin mesa ofrece las libres, y un número suelto la elige", () => 
   const a = crear(entorno({ usuario: ana, reservadas: { "sala-8#1": true } }));
   const r = a.responder("quiero reservar en la sala 8");
   assert.match(r.texto, /¿Qué mesa de la Sala 8\? Libres: 2, 3/);
-  assert.ok(r.botones.some((b) => b.decir === "Reserva la mesa 2 de la Sala 8"));
-  assert.match(a.responder("la 5").texto, /¿Reservo la mesa 5 de la Sala 8/);
+  assert.ok(r.botones.some((b) => b.decir === "Reporta la mesa 2 de la Sala 8"));
+  assert.match(a.responder("la 5").texto, /¿Reporto la mesa 5 de la Sala 8/);
 });
 
 test("reservar sin sala recomienda la que más mesas libres tiene", () => {
@@ -145,7 +145,7 @@ test("reservar sin sala recomienda la que más mesas libres tiene", () => {
 test("no reserva mesas ocupadas ni inexistentes", () => {
   const a = crear(entorno({ usuario: ana, reservadas: { "sala-8#3": true } }));
   const ocupada = a.responder("reserva la mesa 3 de la sala 8");
-  assert.match(ocupada.texto, /ya está reservada hasta las 8:00 p\. m\./);
+  assert.match(ocupada.texto, /ya está reportada hasta las 8:00 p\. m\./);
   assert.equal(ocupada.ejecutar, undefined);
   assert.match(a.responder("reserva la mesa 40 de la sala 8").texto, /mesas del 1 al 12/);
   assert.match(a.responder("reserva la mesa 1 de la cafetería").texto, /no tiene mesas/);
@@ -166,19 +166,19 @@ test("reservar exige sesión y respeta el límite de una reserva", () => {
 
 test("mi reserva", () => {
   const r = preguntar("¿cuál es mi mesa?", { usuario: ana, mia: "sala-9#4" });
-  assert.match(r.texto, /mesa es la 4 de la Sala 9 \(Piso 2\), reservada hasta las 8:00 p\. m\./);
+  assert.match(r.texto, /mesa es la 4 de la Sala 9 \(Piso 2\), reportada hasta las 8:00 p\. m\./);
   assert.deepEqual(r.botones[0].accion, { tipo: "abrir", salaId: "sala-9", mesaId: "sala-9#4" });
-  assert.match(preguntar("¿tengo alguna reserva?", { usuario: ana }).texto, /No tienes ninguna mesa reservada/);
+  assert.match(preguntar("¿tengo alguna reserva?", { usuario: ana }).texto, /No tienes ninguna mesa reportada/);
   assert.match(preguntar("mi reserva").texto, /inicia sesión/);
 });
 
 test("quitar la reserva pide confirmación", () => {
   const a = crear(entorno({ usuario: ana, mia: "sala-9#4" }));
-  assert.match(a.responder("quita mi reserva").texto, /¿Quito tu reserva de la mesa 4 de la Sala 9\?/);
+  assert.match(a.responder("quita mi reserva").texto, /¿Quito tu reporte de la mesa 4 de la Sala 9\?/);
   assert.deepEqual(a.responder("sí, quítala").ejecutar, { tipo: "quitar", mesaId: "sala-9#4" });
-  assert.match(preguntar("cancelar mi reserva", { usuario: ana }).texto, /No tienes ninguna reserva/);
+  assert.match(preguntar("cancelar mi reserva", { usuario: ana }).texto, /No tienes ningún reporte/);
   for (const t of ["ya no quiero la mesa", "libera mi mesa", "anular reserva"]) {
-    assert.match(preguntar(t, { usuario: ana, mia: "sala-9#4" }).texto, /¿Quito tu reserva/, t);
+    assert.match(preguntar(t, { usuario: ana, mia: "sala-9#4" }).texto, /¿Quito tu reporte/, t);
   }
 });
 
@@ -197,10 +197,10 @@ test("recomienda la sala con más mesas libres y es honesto con lo que no sabe",
 test("preguntas de uso, reglas y cuenta", () => {
   assert.match(preguntar("¿Cómo reservo una mesa?").texto, /1\. Inicia sesión/);
   assert.match(preguntar("como funciona esto").texto, /1\. Inicia sesión/);
-  assert.match(preguntar("¿puedo reservar dos mesas?").texto, /una mesa reservada a la vez/);
+  assert.match(preguntar("¿puedo reservar dos mesas?").texto, /una mesa reportada a la vez/);
   assert.match(preguntar("¿cuánto dura la reserva?").texto, /de 1 a 4 horas/);
   assert.match(preguntar("¿hasta qué hora puedo reservar?").texto, /11:59 p\. m\./);
-  assert.match(preguntar("¿qué significa el color rojo?").texto, /rojo = reservada/);
+  assert.match(preguntar("¿qué significa el color rojo?").texto, /rojo = reportada/);
   assert.match(preguntar("¿para cuántas personas es una mesa?").texto, /6 puestos/);
   assert.match(preguntar("¿se guarda un historial de las reservas?").texto, /hora de inicio y la hora de fin/);
   assert.match(preguntar("¿cómo creo una cuenta?").texto, /7 cifras/);
@@ -246,4 +246,17 @@ test("nunca ejecuta reservar o quitar sin confirmación previa", () => {
     assert.ok(!r.ejecutar || !["reservar", "quitar"].includes(r.ejecutar.tipo), t);
   }
   assert.equal(a.responder("sí").ejecutar, undefined);
+});
+
+test("se entiende «reportar» y «reservar» como lo mismo", () => {
+  for (const verbo of ["Reporta", "Reserva", "reportar", "quiero reportar"]) {
+    const a = crear(entorno({ usuario: ana }));
+    const r = a.responder(`${verbo} la mesa 3 de la sala 9`);
+    assert.match(r.texto, /¿Reporto la mesa 3 de la Sala 9/, verbo);
+    assert.deepEqual(a.responder("sí, reporta").ejecutar, { tipo: "reservar", mesaId: "sala-9#3", horas: 2 });
+  }
+  const a = crear(entorno({ usuario: ana, mia: "sala-9#4" }));
+  assert.match(a.responder("¿cuál es mi reporte?").texto, /mesa es la 4 de la Sala 9/);
+  assert.match(a.responder("quita mi reporte").texto, /¿Quito tu reporte/);
+  assert.match(preguntar("¿cómo reporto una mesa?").texto, /1\. Inicia sesión/);
 });

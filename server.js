@@ -358,7 +358,7 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
 
     if (ruta === "/api/reservas" && metodo === "POST") {
       const s = sesionDe(req);
-      if (!s) return error(res, 401, "Inicia sesión para reservar una mesa.");
+      if (!s) return error(res, 401, "Inicia sesión para reportar una mesa.");
       const cuerpo = await leerJson(req);
       const mesa = cuerpo.mesa;
       if (typeof mesa !== "string" || !mesasValidas.has(mesa)) return error(res, 404, "Esa mesa no existe.");
@@ -370,7 +370,7 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
       const ahora = new Date();
       const hasta = calcularFin(ahora, horas);
       if (hasta.getTime() - ahora.getTime() < MINUTOS_MIN_RESTANTES * 60 * 1000) {
-        return error(res, 409, "Ya es muy tarde para reservar hoy: las reservas terminan a las 23:59.");
+        return error(res, 409, "Ya es muy tarde para reportar hoy: los reportes terminan a las 23:59.");
       }
 
       const [salaId, numero] = mesa.split("#");
@@ -381,10 +381,10 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
         ahora,
       });
       if (r.ok) return responder(res, 201, await estadoReservas(s.codigo));
-      if (r.motivo === "propia") return error(res, 409, "Ya reservaste esta mesa.");
-      if (r.motivo === "ocupada") return error(res, 409, "Esa mesa ya está reservada.");
+      if (r.motivo === "propia") return error(res, 409, "Ya reportaste esta mesa.");
+      if (r.motivo === "ocupada") return error(res, 409, "Esa mesa ya está reportada.");
       if (r.motivo === "limite") {
-        return error(res, 409, "Ya tienes una mesa reservada. Quita esa reserva antes de apartar otra.", {
+        return error(res, 409, "Ya tienes una mesa reportada. Quita ese reporte antes de reportar otra.", {
           actual: r.actual,
         });
       }
@@ -395,7 +395,7 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
     const coincide = /^\/api\/reservas\/([^/]+)$/.exec(ruta);
     if (coincide && metodo === "DELETE") {
       const s = sesionDe(req);
-      if (!s) return error(res, 401, "Inicia sesión para quitar una reserva.");
+      if (!s) return error(res, 401, "Inicia sesión para quitar un reporte.");
       let mesa;
       try {
         mesa = decodeURIComponent(coincide[1]);
@@ -403,8 +403,8 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
         return error(res, 400, "Mesa no válida.");
       }
       const r = await almacen.reservaDeMesa(mesa);
-      if (!r) return error(res, 404, "Esa mesa no tiene reserva.");
-      if (r.codigo !== s.codigo) return error(res, 403, "Solo puedes quitar tus propias reservas.");
+      if (!r) return error(res, 404, "Esa mesa no tiene reporte.");
+      if (r.codigo !== s.codigo) return error(res, 403, "Solo puedes quitar tus propios reportes.");
       const [salaId, numero] = mesa.split("#");
       await almacen.liberar(mesa, s.codigo, { sala: nombresSala.get(salaId) || salaId, numero: Number(numero) });
       return responder(res, 200, await estadoReservas(s.codigo));
@@ -462,7 +462,7 @@ const main = async () => {
   await almacen.inicializar();
   const mesasValidas = cargarMesasValidas();
   const descartadas = await almacen.depurarReservas(mesasValidas);
-  if (descartadas) console.log(`Se descartaron ${descartadas} reservas de mesas que ya no existen.`);
+  if (descartadas) console.log(`Se descartaron ${descartadas} reportes de mesas que ya no existen.`);
 
   const servidor = crearServidor({ almacen, mesasValidas });
   servidor.listen(puerto, host, () => {
