@@ -551,7 +551,7 @@ body {
   border-left-color: var(--libre) !important;
 }
 
-.conteo-reservada {
+.conteo-reportada {
   border-left-color: var(--ocupada) !important;
 }
 
@@ -943,7 +943,7 @@ body {
   cursor: progress;
 }
 
-/* ---------- Mesas: estado y reserva ---------- */
+/* ---------- Mesas: estado y reporte ---------- */
 
 #sala-plano .mesa {
   cursor: pointer;
@@ -971,7 +971,7 @@ body {
   fill: var(--libre);
 }
 
-#sala-plano .mesa.reservada .mesa-tablero,
+#sala-plano .mesa.reportada .mesa-tablero,
 #sala-plano .mesa.mia .mesa-tablero {
   fill: var(--ocupada);
 }
@@ -1057,7 +1057,7 @@ body {
   background: var(--libre);
 }
 
-.muestra.reservada {
+.muestra.reportada {
   background: var(--ocupada);
 }
 

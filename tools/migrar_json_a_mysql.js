@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Copia las cuentas y reservas de la versión anterior (datos/biblioteca.json) a MySQL.
+ * Copia las cuentas y reportes de la versión anterior (datos/biblioteca.json) a MySQL.
  * Las contraseñas ya están cifradas (scrypt), así que las personas conservan la suya.
  * Se puede ejecutar más de una vez: lo que ya existe se omite.
  *
@@ -14,7 +14,7 @@ const path = require("node:path");
 const { cargarEnv, configDesdeEntorno, abrirPool, crearAlmacen } = require("../db");
 
 const migrar = async (almacen, datos, log = console.log) => {
-  const total = { usuarios: 0, usuariosOmitidos: 0, reservas: 0, reservasOmitidas: 0 };
+  const total = { usuarios: 0, usuariosOmitidos: 0, reportes: 0, reportesOmitidas: 0 };
 
   for (const [codigo, u] of Object.entries(datos.usuarios || {})) {
     const valido = /^\d{7}$/.test(codigo) && u && typeof u.nombre === "string" && /^[0-9a-f]+:[0-9a-f]+$/.test(u.clave || "");
@@ -25,12 +25,12 @@ const migrar = async (almacen, datos, log = console.log) => {
     }
   }
 
-  for (const [mesa, r] of Object.entries(datos.reservas || {})) {
-    const res = await almacen.reservar(mesa, r.codigo);
-    if (res.ok) total.reservas++;
+  for (const [mesa, r] of Object.entries(datos.reportes || {})) {
+    const res = await almacen.reportar(mesa, r.codigo);
+    if (res.ok) total.reportes++;
     else {
-      total.reservasOmitidas++;
-      log(`  reserva omitida: ${mesa} (${res.motivo})`);
+      total.reportesOmitidas++;
+      log(`  reporte omitida: ${mesa} (${res.motivo})`);
     }
   }
   return total;
@@ -51,8 +51,8 @@ const main = async () => {
     await almacen.inicializar();
     const t = await migrar(almacen, datos);
     console.log(
-      `Listo → ${config.database}: ${t.usuarios} usuarios y ${t.reservas} reservas copiados ` +
-        `(${t.usuariosOmitidos} usuarios y ${t.reservasOmitidas} reservas omitidos).`
+      `Listo → ${config.database}: ${t.usuarios} usuarios y ${t.reportes} reportes copiados ` +
+        `(${t.usuariosOmitidos} usuarios y ${t.reportesOmitidas} reportes omitidos).`
     );
   } finally {
     await almacen.cerrar();

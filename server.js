@@ -4,8 +4,8 @@
  *
  *   - Sirve la interfaz (index.html, css/, js/).
  *   - Cuentas: código único de 7 cifras + nombre + contraseña (mín. 8).
- *   - Reservas de mesas, compartidas entre todas las personas.
- *   - Usuarios y reservas se guardan en MySQL (ver db.js, schema.sql y .env.example).
+ *   - Reportes de mesas, compartidas entre todas las personas.
+ *   - Usuarios y reportes se guardan en MySQL (ver db.js, schema.sql y .env.example).
  *
  * Uso:  npm install  (una vez)  y luego  npm start
  * Variables (o archivo .env): PORT, HOST, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME
@@ -45,7 +45,7 @@ const cargarMesasValidas = () => {
   return ids;
 };
 
-// Nombre de cada sala (js/data.js), para el registro de reservas: «sala-8» -> «Sala 8».
+// Nombre de cada sala (js/data.js), para el registro de reportes: «sala-8» -> «Sala 8».
 const cargarNombresSala = () => {
   const fuente = fs.readFileSync(path.join(RAIZ, "js", "data.js"), "utf8");
   const pisos = vm.runInNewContext(`${fuente}\n;PISOS`, Object.create(null), { timeout: 1000 });
@@ -61,14 +61,14 @@ const cargarNombresSala = () => {
   return nombres;
 };
 
-/* ---------- Duración de las reservas ---------- */
+/* ---------- Duración de los reportes ---------- */
 
 const HORAS_MIN = 1;
 const HORAS_MAX = 4;
 const HORAS_PREDETERMINADAS = 2;
-const MINUTOS_MIN_RESTANTES = 15; // no se reserva si faltan menos minutos para el fin del día
+const MINUTOS_MIN_RESTANTES = 15; // no se reporte si faltan menos minutos para el fin del día
 
-// La reserva empieza ahora y dura `horas`, pero nunca pasa de las 23:59 del mismo día.
+// El reporte empieza ahora y dura `horas`, pero nunca pasa de las 23:59 del mismo día.
 const calcularFin = (ahora, horas) => {
   const finDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59, 0);
   return new Date(Math.min(ahora.getTime() + horas * 60 * 60 * 1000, finDia.getTime()));
@@ -268,15 +268,15 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
 
   /* API */
 
-  const estadoReservas = async (codigo) => {
-    const reservas = {};
+  const estadoReportes = async (codigo) => {
+    const reportes = {};
     let mia = null;
-    for (const r of await almacen.reservas()) {
+    for (const r of await almacen.reportes()) {
       const esMia = codigo !== null && r.codigo === codigo;
-      reservas[r.mesa] = { mia: esMia, hasta: r.hasta.toISOString() };
+      reportes[r.mesa] = { mia: esMia, hasta: r.hasta.toISOString() };
       if (esMia) mia = r.mesa;
     }
-    return { reservas, mia };
+    return { reportes, mia };
   };
 
   const iniciarSesion = (req, res, usuario, estado = 200) => {
@@ -306,9 +306,9 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
       return responder(res, 200, { usuario: s ? { codigo: s.codigo, nombre: s.nombre } : null });
     }
 
-    if (ruta === "/api/reservas" && metodo === "GET") {
+    if (ruta === "/api/reportes" && metodo === "GET") {
       const s = sesionDe(req);
-      return responder(res, 200, await estadoReservas(s ? s.codigo : null));
+      return responder(res, 200, await estadoReportes(s ? s.codigo : null));
     }
 
     if (ruta === "/api/registro" && metodo === "POST") {
@@ -356,7 +356,7 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
       return responder(res, 200, { ok: true }, { "Set-Cookie": cookieSesion(req, "", 0) });
     }
 
-    if (ruta === "/api/reservas" && metodo === "POST") {
+    if (ruta === "/api/reportes" && metodo === "POST") {
       const s = sesionDe(req);
       if (!s) return error(res, 401, "Inicia sesión para reportar una mesa.");
       const cuerpo = await leerJson(req);
@@ -374,13 +374,13 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
       }
 
       const [salaId, numero] = mesa.split("#");
-      const r = await almacen.reservar(mesa, s.codigo, {
+      const r = await almacen.reportar(mesa, s.codigo, {
         sala: nombresSala.get(salaId) || salaId,
         numero: Number(numero),
         hasta,
         ahora,
       });
-      if (r.ok) return responder(res, 201, await estadoReservas(s.codigo));
+      if (r.ok) return responder(res, 201, await estadoReportes(s.codigo));
       if (r.motivo === "propia") return error(res, 409, "Ya reportaste esta mesa.");
       if (r.motivo === "ocupada") return error(res, 409, "Esa mesa ya está reportada.");
       if (r.motivo === "limite") {
@@ -392,7 +392,7 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
       return error(res, 401, "Tu cuenta ya no existe. Vuelve a crearla.");
     }
 
-    const coincide = /^\/api\/reservas\/([^/]+)$/.exec(ruta);
+    const coincide = /^\/api\/reportes\/([^/]+)$/.exec(ruta);
     if (coincide && metodo === "DELETE") {
       const s = sesionDe(req);
       if (!s) return error(res, 401, "Inicia sesión para quitar un reporte.");
@@ -402,12 +402,12 @@ const crearServidor = ({ almacen, mesasValidas = cargarMesasValidas(), nombresSa
       } catch {
         return error(res, 400, "Mesa no válida.");
       }
-      const r = await almacen.reservaDeMesa(mesa);
+      const r = await almacen.reporteDeMesa(mesa);
       if (!r) return error(res, 404, "Esa mesa no tiene reporte.");
       if (r.codigo !== s.codigo) return error(res, 403, "Solo puedes quitar tus propios reportes.");
       const [salaId, numero] = mesa.split("#");
       await almacen.liberar(mesa, s.codigo, { sala: nombresSala.get(salaId) || salaId, numero: Number(numero) });
-      return responder(res, 200, await estadoReservas(s.codigo));
+      return responder(res, 200, await estadoReportes(s.codigo));
     }
 
     return error(res, 404, "No encontrado");
@@ -461,7 +461,7 @@ const main = async () => {
   const almacen = crearAlmacen(pool);
   await almacen.inicializar();
   const mesasValidas = cargarMesasValidas();
-  const descartadas = await almacen.depurarReservas(mesasValidas);
+  const descartadas = await almacen.depurarReportes(mesasValidas);
   if (descartadas) console.log(`Se descartaron ${descartadas} reportes de mesas que ya no existen.`);
 
   const servidor = crearServidor({ almacen, mesasValidas });

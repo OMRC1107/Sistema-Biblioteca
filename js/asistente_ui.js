@@ -1,8 +1,8 @@
 /*
  * Pantalla del asistente de mesas: botón flotante, ventana de chat y ejecución de
- * las acciones que decide js/asistente.js (abrir una sala, reservar, quitar, etc.).
- * Las reservas y cancelaciones pasan por Cuenta, o sea por el mismo servidor y las
- * mismas reglas que los botones del plano; el asistente nunca reserva sin que la
+ * las acciones que decide js/asistente.js (abrir una sala, reportar, quitar, etc.).
+ * Los reportes y cancelaciones pasan por Cuenta, o sea por el mismo servidor y las
+ * mismas reglas que los botones del plano; el asistente nunca reporte sin que la
  * persona confirme.
  */
 
@@ -74,9 +74,9 @@
         await Cuenta.salir();
         agregar("bot", "Cerré tu sesión.");
         break;
-      case "reservar":
+      case "reportar":
         try {
-          await Cuenta.reservar(accion.mesaId, accion.horas);
+          await Cuenta.reportar(accion.mesaId, accion.horas);
           const [salaId, n] = accion.mesaId.split("#");
           const hasta = Cuenta.hastaMesa(accion.mesaId);
           agregar(

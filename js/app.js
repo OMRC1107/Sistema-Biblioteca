@@ -64,22 +64,22 @@
   const mesasDe = (sala) => (MESAS[sala.id] ? MESAS[sala.id].centros.length : 0);
   const seleccionable = (sala) => mesasDe(sala) > 0;
 
-  // Mesas de una lista de salas: total, disponibles y reservadas (null sin servidor).
+  // Mesas de una lista de salas: total, disponibles y reportadas (null sin servidor).
   const contarMesas = (lista) => {
     let total = 0;
     let libres = 0;
-    let reservadas = 0;
+    let reportadas = 0;
     for (const sala of lista) {
       const n = mesasDe(sala);
       total += n;
       for (let i = 1; i <= n; i++) {
         const situacion = Cuenta.estadoMesa(`${sala.id}#${i}`);
         if (situacion === "libre") libres++;
-        else if (situacion === "reservada" || situacion === "mia") reservadas++;
+        else if (situacion === "reportada" || situacion === "mia") reportadas++;
       }
     }
     const conectado = Cuenta.estado.disponible === true;
-    return { total, libres: conectado ? libres : null, reservadas: conectado ? reservadas : null };
+    return { total, libres: conectado ? libres : null, reportadas: conectado ? reportadas : null };
   };
 
   /* ---------- Estado ---------- */
@@ -90,7 +90,7 @@
     mesaSel: null,
     mesaMensaje: "",
     mesaOcupada: false,
-    horas: 2, // duración elegida para reservar
+    horas: 2, // duración elegida para reportar
     consulta: "",
     resultados: [],
     indiceActivo: 0,
@@ -300,7 +300,7 @@
 
   const ETIQUETA_ESTADO = {
     libre: "disponible",
-    reservada: "reportada",
+    reportada: "reportada",
     mia: "reportada por ti",
     desconocido: "sin información de reportes",
   };
@@ -309,17 +309,17 @@
   const formatoHora = (fecha) =>
     fecha.toLocaleTimeString("es-CO", { hour: "numeric", minute: "2-digit", hour12: true });
 
-  // Hora en que terminaría una reserva hecha ahora (máximo las 23:59 del mismo día).
+  // Hora en que terminaría un reporte hecha ahora (máximo las 23:59 del mismo día).
   const finPrevisto = (horas) => {
     const ahora = new Date();
     const finDia = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), 23, 59);
     return new Date(Math.min(ahora.getTime() + horas * 3600 * 1000, finDia.getTime()));
   };
 
-  const INSIGNIA = { libre: "✓", reservada: "✕", mia: "★" };
+  const INSIGNIA = { libre: "✓", reportada: "✕", mia: "★" };
 
   // Mesa hexagonal con 6 sillas, vista desde arriba. Unidad = radio total (1).
-  // Color: verde = disponible, rojo = reservada (además lleva un símbolo).
+  // Color: verde = disponible, rojo = reportada (además lleva un símbolo).
   const dibujarMesa = ({ cx, cy, radio, numero, id, situacion, seleccionada }) => {
     const g = crearSvg("g", {
       class: `mesa ${situacion}${seleccionada ? " sel" : ""}`,
@@ -541,14 +541,14 @@
       ui.salaMeta.textContent +=
         c.libres === null
           ? ` · ${c.total} mesas de 6 puestos`
-          : ` · ${c.libres} disponibles · ${c.reservadas} reportadas · ${c.total} mesas de 6 puestos`;
+          : ` · ${c.libres} disponibles · ${c.reportadas} reportadas · ${c.total} mesas de 6 puestos`;
     }
 
     ui.salaPlano.replaceChildren(crearSvg("defs", {}, mascara), contenido);
     renderMesaAccion(sala, mesas);
   };
 
-  /* Panel de reserva de la mesa elegida. */
+  /* Panel de reporte de la mesa elegida. */
   const renderMesaAccion = (sala, mesas) => {
     ui.mesaBloque.hidden = !mesas.centros.length;
     if (!mesas.centros.length) {
@@ -572,7 +572,7 @@
       const id = estado.mesaSel;
       const numero = Number(id.split("#")[1]);
       const situacion = Cuenta.estadoMesa(id);
-      const textoSituacion = { libre: "Disponible", reservada: "Reportada", mia: "Reportada por ti" }[situacion];
+      const textoSituacion = { libre: "Disponible", reportada: "Reportada", mia: "Reportada por ti" }[situacion];
       const hasta = Cuenta.hastaMesa(id);
       partes.push(
         crear(
@@ -621,7 +621,7 @@
             onclick: (e) =>
               accionMesa(
                 e.currentTarget,
-                () => Cuenta.reservar(id, estado.horas),
+                () => Cuenta.reportar(id, estado.horas),
                 `Mesa ${numero} reportada hasta las ${formatoHora(finPrevisto(estado.horas))}.`
               ),
           })
@@ -732,7 +732,7 @@
     ui.cuenta.replaceChildren(...nodos);
   };
 
-  // Tarjetas «Disponibles / Reservadas» de un conjunto de salas.
+  // Tarjetas «Disponibles / Reportadas» de un conjunto de salas.
   const bloqueConteo = (c) => {
     if (c.libres === null) {
       return crear(
@@ -745,7 +745,7 @@
       "div",
       { class: "conteo" },
       crear("div", { class: "conteo-libre" }, crear("strong", { text: String(c.libres) }), crear("span", { text: c.libres === 1 ? "Disponible" : "Disponibles" })),
-      crear("div", { class: "conteo-reservada" }, crear("strong", { text: String(c.reservadas) }), crear("span", { text: c.reservadas === 1 ? "Reportada" : "Reportadas" }))
+      crear("div", { class: "conteo-reportada" }, crear("strong", { text: String(c.reportadas) }), crear("span", { text: c.reportadas === 1 ? "Reportada" : "Reportadas" }))
     );
   };
 
@@ -760,7 +760,7 @@
           {},
           crear("span", { text: piso.nombre }),
           crear("small", {
-            text: c.libres === null ? `${c.total} mesas` : `${c.libres} disponibles · ${c.reservadas} reportadas`,
+            text: c.libres === null ? `${c.total} mesas` : `${c.libres} disponibles · ${c.reportadas} reportadas`,
           })
         );
       });
@@ -996,7 +996,7 @@
     if (sala && seleccionable(sala) && sala.id !== estado.seleccion) seleccionar(sala.id);
   });
 
-  // Cuando cambia la sesión o las reservas (propias o de otras personas) se redibuja.
+  // Cuando cambia la sesión o los reportes (propias o de otras personas) se redibuja.
   Cuenta.suscribir(() => {
     renderCuenta();
     renderDetalle();

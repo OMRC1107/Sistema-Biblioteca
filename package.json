@@ -1,7 +1,7 @@
 {
   "name": "sistema-biblioteca",
   "version": "2.0.0",
-  "description": "Mapa de la biblioteca con búsqueda de salas y reserva de mesas (MySQL)",
+  "description": "Mapa de la biblioteca con búsqueda de salas y reporte de mesas (MySQL)",
   "private": true,
   "main": "server.js",
   "scripts": {

@@ -13,7 +13,7 @@ Identificador estable de cada mesa: "sala-8#2" = mesa 2 de la Sala 8, siendo la
 N-ésima en orden de lectura (de arriba abajo y de izquierda a derecha).
 
 Uso:  python3 tools/generar_mesas.py
-Requiere: playwright (Chromium). Las reservas de mesas que ya no existan se
+Requiere: playwright (Chromium). Los reportes de mesas que ya no existan se
 descartan al iniciar el servidor.
 """
 

@@ -2,7 +2,7 @@
  * Asistente de mesas (contestador por reglas, sin inteligencia artificial).
  *
  * Entiende preguntas en español sobre las mesas y las salas: disponibilidad, dónde
- * está una sala, reservar, quitar la reserva, mi reserva, cómo funciona, etc.
+ * está una sala, reportar, quitar el reporte, mi reporte, cómo funciona, etc.
  * Funciona buscando palabras clave y datos (sala, piso, número de mesa, horas).
  *
  * Este archivo solo decide qué responder: no toca la pantalla ni el servidor.
@@ -11,7 +11,7 @@
  *   responder(texto) -> { texto, botones?: [{ etiqueta, decir? | accion? }], ejecutar? }
  *     botones[].decir   texto que se envía como si la persona lo hubiera escrito
  *     botones[].accion  { tipo: "abrir" | "login" | "salir", ... } la ejecuta la interfaz
- *     ejecutar          { tipo: "reservar" | "quitar" | "abrir" | "piso", ... } se hace ya
+ *     ejecutar          { tipo: "reportar" | "quitar" | "abrir" | "piso", ... } se hace ya
  *
  * Se puede usar en el navegador (global Asistente) y en Node (require), para probarlo.
  */
@@ -78,7 +78,7 @@
    * @param {object} entorno
    * @param {Array}  entorno.salas        [{ id, nombre, piso, pisoNombre, tipo }]
    * @param {Function} entorno.mesasDe    (sala) => cantidad de mesas
-   * @param {Function} entorno.estadoMesa (idMesa) => "libre" | "reservada" | "mia" | "desconocido"
+   * @param {Function} entorno.estadoMesa (idMesa) => "libre" | "reportada" | "mia" | "desconocido"
    * @param {Function} entorno.hastaMesa  (idMesa) => Date | null
    * @param {Function} entorno.cuenta     () => { disponible, usuario, mia }
    * @param {Function} [entorno.ahora]    () => Date
@@ -104,7 +104,7 @@
         total += mesasDe(sala);
         libres += libresDe(sala).length;
       }
-      return { total, libres, reservadas: total - libres };
+      return { total, libres, reportadas: total - libres };
     };
 
     const sinConexion = () => cuenta().disponible !== true;
@@ -115,7 +115,7 @@
         "Cuando el servidor esté encendido («npm start» y MySQL) puedes volver a preguntarme.",
     });
 
-    const finDeReserva = (horas) => {
+    const finDeReporte = (horas) => {
       const t = ahora();
       const finDia = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23, 59);
       return new Date(Math.min(t.getTime() + horas * 3600 * 1000, finDia.getTime()));
@@ -199,7 +199,7 @@
       botones: botonesBase(),
     });
 
-    const comoReservar = () => ({
+    const comoReportar = () => ({
       texto:
         "Reportar una mesa es sencillo:\n" +
         "1. Inicia sesión (o crea tu cuenta con tu código de 7 cifras).\n" +
@@ -323,7 +323,7 @@
         return {
           texto:
             `${sala.nombre} (${sala.pisoNombre}): ${plural(c.libres, "mesa libre", "mesas libres")} y ` +
-            `${plural(c.reservadas, "reportada", "reportadas")}, de ${c.total} en total.` +
+            `${plural(c.reportadas, "reportada", "reportadas")}, de ${c.total} en total.` +
             (libres.length ? `\nLibres: ${lista(libres.map((n) => `mesa ${n}`))}.` : "\nPor ahora no queda ninguna libre."),
           botones,
         };
@@ -350,7 +350,7 @@
       const mejor = mejorSala(conMesas);
       return {
         texto:
-          `En toda la biblioteca hay ${plural(c.libres, "mesa libre", "mesas libres")} de ${c.total} (${c.reservadas} reportadas).\n` +
+          `En toda la biblioteca hay ${plural(c.libres, "mesa libre", "mesas libres")} de ${c.total} (${c.reportadas} reportadas).\n` +
           porPiso.join("\n") +
           (mejor ? `\nLa sala con más mesas libres ahora es ${mejor.nombre} (${libresDe(mejor).length}).` : ""),
         botones: [...(mejor ? [botonVer(mejor)] : []), ...pisos.map((p) => ({ etiqueta: `Piso ${p}`, decir: `Mesas libres en el piso ${p}` }))],
@@ -421,9 +421,9 @@
       return { texto: "¿Qué sala o piso quieres ver? Por ejemplo: «muéstrame la Sala 8» o «piso 2».", botones: botonesBase() };
     };
 
-    /* ----- Mi reserva ----- */
+    /* ----- Mi reporte ----- */
 
-    const miReserva = () => {
+    const miReporte = () => {
       const c = cuenta();
       if (c.disponible === false) return respuestaSinConexion();
       if (!c.usuario) {
@@ -452,7 +452,7 @@
       };
     };
 
-    /* ----- Reservar ----- */
+    /* ----- Reportar ----- */
 
     const pedirSesion = (texto) => ({
       texto,
@@ -462,7 +462,7 @@
       ],
     });
 
-    const reservar = ({ sala, piso, mesa, horas }) => {
+    const reportar = ({ sala, piso, mesa, horas }) => {
       const c = cuenta();
       if (c.disponible === false || c.disponible === null) return respuestaSinConexion();
       if (!c.usuario) return pedirSesion("Para reportar una mesa necesitas iniciar sesión.");
@@ -529,12 +529,12 @@
         };
       }
 
-      memoria.pendiente = { tipo: "reservar", mesaId: id, horas: h };
+      memoria.pendiente = { tipo: "reportar", mesaId: id, horas: h };
       memoria.esperandoMesa = null;
       return {
         texto:
           `¿Reporto la mesa ${mesa} ${de(sala)} por ${plural(h, "hora", "horas")}? ` +
-          `Empezaría ahora y terminaría a las ${formatoHora(finDeReserva(h))}.`,
+          `Empezaría ahora y terminaría a las ${formatoHora(finDeReporte(h))}.`,
         botones: [
           { etiqueta: "Sí, reportar", decir: "sí" },
           { etiqueta: "No", decir: "no" },
@@ -562,22 +562,22 @@
     /* ----- Confirmaciones ----- */
 
     const confirmar = (pendiente) => {
-      if (pendiente.tipo === "reservar") {
+      if (pendiente.tipo === "reportar") {
         // El estado pudo cambiar mientras tanto (otra persona se adelantó).
         if (estadoMesa(pendiente.mesaId) !== "libre") {
           const [salaId, n] = pendiente.mesaId.split("#");
           return { texto: `Alguien acaba de reportar la mesa ${n} de esa sala. ¿Quieres elegir otra?`, botones: [{ etiqueta: "Ver mesas libres", decir: `Mesas libres en la sala ${salaId.replace("sala-", "")}` }] };
         }
-        return { texto: "Reportando…", ejecutar: { tipo: "reservar", mesaId: pendiente.mesaId, horas: pendiente.horas } };
+        return { texto: "Reportando…", ejecutar: { tipo: "reportar", mesaId: pendiente.mesaId, horas: pendiente.horas } };
       }
       return { texto: "Quitando tu reporte…", ejecutar: { tipo: "quitar", mesaId: pendiente.mesaId } };
     };
 
     /* ----- Interpretación ----- */
 
-    // Se entiende «reportar» igual que «reservar» (las reglas de abajo usan una sola raíz).
+    // Se entiende «reservar» igual que «reportar» (las reglas de abajo usan una sola raíz).
     const equivalencias = (t) =>
-      t.replace(/\breportes\b/g, "reservas").replace(/\breporte\b/g, "reserva").replace(/\breport(?=\w)/g, "reserv");
+      t.replace(/\breservas\b/g, "reportes").replace(/\breserva\b/g, "reporte").replace(/\breserv(?=\w)/g, "report");
 
     const interpretar = (entrada) => {
       const t = equivalencias(normalizar(entrada));
@@ -588,7 +588,7 @@
 
       // 1. Respuesta a una confirmación pendiente.
       if (pendiente) {
-        if (/^(si|sii+|sip|claro|confirmo|confirmar|dale|ok|okay|listo|por favor|de una|adelante|hazlo|hagale|correcto|exacto|vale|si reserva|si quitala|si quitar)( .*)?$/.test(t)) {
+        if (/^(si|sii+|sip|claro|confirmo|confirmar|dale|ok|okay|listo|por favor|de una|adelante|hazlo|hagale|correcto|exacto|vale|si reporte|si quitala|si quitar)( .*)?$/.test(t)) {
           return confirmar(pendiente);
         }
         if (/^(no|nop|nel|cancelar|cancela|mejor no|nada|olvidalo|dejalo)( .*)?$/.test(t)) {
@@ -613,7 +613,7 @@
       // 2. Número suelto como respuesta a «¿qué mesa?».
       const suelto = /^(?:la |el |mesa |numero |n |no )?(?:mesa )?(\d{1,2})$/.exec(t);
       if (suelto && memoria.esperandoMesa) {
-        return recordar("reservar", reservar({ sala: memoria.esperandoMesa, mesa: Number(suelto[1]), horas: null }));
+        return recordar("reportar", reportar({ sala: memoria.esperandoMesa, mesa: Number(suelto[1]), horas: null }));
       }
 
       const hay = (re) => re.test(t);
@@ -625,36 +625,36 @@
       if (hay(/\b(ayuda|ayudame|que puedes hacer|que sabes|como te uso|opciones|menu|que haces|para que sirves|comandos)\b/) && !hay(/\b(cuenta|sesion|contrasena|clave)\b/)) return ayuda();
 
       // 4. Preguntas de funcionamiento.
-      if (hay(/\bcomo\b.*\b(reserv\w*|apart\w*|separ\w*|uso|funciona|hago)\b/) || hay(/\b(pasos|instrucciones|tutorial)\b.*\b(reserv\w*|mesa)\b/)) return comoReservar();
+      if (hay(/\bcomo\b.*\b(report\w*|apart\w*|separ\w*|uso|funciona|hago)\b/) || hay(/\b(pasos|instrucciones|tutorial)\b.*\b(report\w*|mesa)\b/)) return comoReportar();
       if (hay(/\bcomo\b.*\b(cancel\w*|quit\w*|liber\w*|anul\w*|elimin\w*|borr\w*)\b/)) {
         return {
           texto: "Para quitar tu reporte: abre tu mesa (roja con estrella) y pulsa «Quitar mi reporte», o dime «quita mi reporte».",
           botones: [{ etiqueta: "Mi reporte", decir: "¿Cuál es mi reporte?" }],
         };
       }
-      if (hay(/\b(puedo|pueden|permite|permiten|se puede|limite|maximo|maxima|cuantas)\b.*\b(reserv\w*|apart\w*|mesas)\b.*\b(a la vez|al mismo tiempo|por persona|dos|varias|mas de una|otra|simultane\w*|puedo)\b/) || hay(/\b(una sola|solo una|mas de una|varias mesas|dos mesas|otra mesa)\b/) || hay(/\b(cuanto dura|duracion|cuanto tiempo|cuantas horas|hasta que hora|a que hora termina|cuando termina|cuando vence|cuando expira|tiempo maximo)\b/)) return reglas(t);
+      if (hay(/\b(puedo|pueden|permite|permiten|se puede|limite|maximo|maxima|cuantas)\b.*\b(report\w*|apart\w*|mesas)\b.*\b(a la vez|al mismo tiempo|por persona|dos|varias|mas de una|otra|simultane\w*|puedo)\b/) || hay(/\b(una sola|solo una|mas de una|varias mesas|dos mesas|otra mesa)\b/) || hay(/\b(cuanto dura|duracion|cuanto tiempo|cuantas horas|hasta que hora|a que hora termina|cuando termina|cuando vence|cuando expira|tiempo maximo)\b/)) return reglas(t);
       if (hay(/\b(color|colores|verde|rojo|roja|estrella|significa|leyenda|atenuad\w*|gris)\b/)) return colores();
       if (hay(/\b(cuantas personas|cuantos puestos|puestos|sillas|capacidad|tamano|cuanta gente|caben)\b/)) return capacidad();
-      if (hay(/\b(historial|registro|queda guardad\w*|se guarda\w*|base de datos|quedan registrad\w*|reservas (anteriores|pasadas|antiguas))\b/)) return registro();
+      if (hay(/\b(historial|registro|queda guardad\w*|se guarda\w*|base de datos|quedan registrad\w*|reportes (anteriores|pasadas|antiguas))\b/)) return registro();
       if (hay(/\b(horario|horarios|abren|abre|cierra|cierran|atencion|imprim\w*|fotocop\w*|wifi|internet|libros?|prestamos?|multas?|biblioteca abierta|telefono|correo|direccion|bano|banos)\b/) && !entidades.sala) return fueraDeTema();
 
       // 5. Cuenta.
-      if (hay(/\b(contrasena|clave|password|sesion|cuenta|registr\w*|codigo|iniciar|login|loguear\w*|entrar)\b/) && !hay(/\b(reserv\w*|mesa)\b/) ) return cuentaAyuda(t);
+      if (hay(/\b(contrasena|clave|password|sesion|cuenta|registr\w*|codigo|iniciar|login|loguear\w*|entrar)\b/) && !hay(/\b(report\w*|mesa)\b/) ) return cuentaAyuda(t);
 
-      // 6. Quitar / mi reserva.
+      // 6. Quitar / mi reporte.
       if (
-        hay(/\b(quit\w*|cancel\w*|liber\w*|anul\w*|elimin\w*|borr\w*|deshac\w*)\b.*\b(reserva|mesa|apartad\w*)\b/) ||
-        hay(/\b(reserva|mesa)\b.*\b(quit\w*|cancel\w*|liber\w*|anul\w*|elimin\w*|borr\w*)\b/) ||
+        hay(/\b(quit\w*|cancel\w*|liber\w*|anul\w*|elimin\w*|borr\w*|deshac\w*)\b.*\b(reporte|mesa|apartad\w*)\b/) ||
+        hay(/\b(reporte|mesa)\b.*\b(quit\w*|cancel\w*|liber\w*|anul\w*|elimin\w*|borr\w*)\b/) ||
         hay(/\bya no (quiero|necesito)\b/)
       ) return recordar("quitar", quitar());
 
-      if (hay(/\b(mi|mis)\b.*\b(mesa|reserva|reservas|apartad\w*)\b/) || hay(/\b(tengo|tengo alguna|hice)\b.*\b(reserva|mesa)\b/) || hay(/\bcual es mi\b/)) {
-        if (!hay(/\b(quiero|necesito|dame|damela|deseo|quisiera|reservame|apartame|haz|hacer)\b/)) return recordar("mi", miReserva());
+      if (hay(/\b(mi|mis)\b.*\b(mesa|reporte|reportes|apartad\w*)\b/) || hay(/\b(tengo|tengo alguna|hice)\b.*\b(reporte|mesa)\b/) || hay(/\bcual es mi\b/)) {
+        if (!hay(/\b(quiero|necesito|dame|damela|deseo|quisiera|reportame|apartame|haz|hacer)\b/)) return recordar("mi", miReporte());
       }
 
-      // 7. Reservar.
-      if (hay(/\b(reserv\w*|apart\w*|agend\w*|separ\w*|consegu\w*)\b/) || hay(/\b(quiero|necesito|busco|dame|damela|deseo|quisiera|me gustaria|ocupar|usar)\b.*\bmesa\b/)) {
-        return recordar("reservar", reservar({ sala: entidades.sala || (salaPrevia && hay(/\b(esa|esta|ahi|alli|misma)\b/) ? salaPrevia : null), piso: entidades.piso, mesa: entidades.mesa, horas: entidades.horas }));
+      // 7. Reportar.
+      if (hay(/\b(report\w*|apart\w*|agend\w*|separ\w*|consegu\w*)\b/) || hay(/\b(quiero|necesito|busco|dame|damela|deseo|quisiera|me gustaria|ocupar|usar)\b.*\bmesa\b/)) {
+        return recordar("reportar", reportar({ sala: entidades.sala || (salaPrevia && hay(/\b(esa|esta|ahi|alli|misma)\b/) ? salaPrevia : null), piso: entidades.piso, mesa: entidades.mesa, horas: entidades.horas }));
       }
 
       // 8. Calidad de la mesa (no hay datos) y recomendaciones.
@@ -663,7 +663,7 @@
 
       // 9. Disponibilidad.
       if (
-        hay(/\b(libre|libres|disponible|disponibles|desocupad\w*|quedan|queda|ocupad\w*|reservadas|cupo|cupos|espacio)\b/) ||
+        hay(/\b(libre|libres|disponible|disponibles|desocupad\w*|quedan|queda|ocupad\w*|reportadas|cupo|cupos|espacio)\b/) ||
         hay(/\bhay\b.*\b(mesa|mesas|sala|salas|sitio|lugar|puesto)\b/) ||
         hay(/\bmesas?\b.*\bhay\b/) ||
         hay(/\bcuantas\b.*\bmesas?\b/) ||
@@ -681,7 +681,7 @@
       // 12. Solo se nombró una sala o un piso: se repite lo último que se hacía.
       if (entidades.sala || entidades.piso || entidades.mesa) {
         const ult = memoria.ultima;
-        if (ult === "reservar") return recordar("reservar", reservar({ ...entidades, sala: entidades.sala || salaPrevia }));
+        if (ult === "reportar") return recordar("reportar", reportar({ ...entidades, sala: entidades.sala || salaPrevia }));
         if (ult === "disponibilidad") return recordar("disponibilidad", disponibilidad(entidades));
         if (ult === "recomendar") return recordar("recomendar", recomendar(entidades));
         if (ult === "listar") return recordar("listar", listarSalas(entidades));

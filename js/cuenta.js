@@ -1,8 +1,8 @@
 /*
- * Cuenta y reservas (cliente).
+ * Cuenta y reportes (cliente).
  *
  * Habla con server.js: registro / inicio de sesión (código de 7 cifras, nombre y
- * contraseña de mínimo 8 caracteres) y reservas de mesas compartidas entre todas
+ * contraseña de mínimo 8 caracteres) y reportes de mesas compartidas entre todas
  * las personas. La sesión vive en una cookie HttpOnly: aquí nunca se guarda la
  * contraseña ni ningún token.
  */
@@ -13,15 +13,15 @@ const Cuenta = (() => {
   const estado = {
     disponible: null, // null = aún no se sabe, false = no hay servidor
     usuario: null, // { codigo, nombre } o null
-    reservas: {}, // { idMesa: { mia: boolean } }
-    mia: null, // idMesa de la reserva propia
+    reportes: {}, // { idMesa: { mia: boolean } }
+    mia: null, // idMesa del reporte propio
   };
 
   const oyentes = new Set();
   let firmaAnterior = "";
 
   const avisar = (forzar = false) => {
-    const firma = JSON.stringify([estado.disponible, estado.usuario, estado.reservas, estado.mia]);
+    const firma = JSON.stringify([estado.disponible, estado.usuario, estado.reportes, estado.mia]);
     if (!forzar && firma === firmaAnterior) return;
     firmaAnterior = firma;
     oyentes.forEach((f) => f());
@@ -59,32 +59,32 @@ const Cuenta = (() => {
     return datos;
   };
 
-  const aplicarReservas = (datos) => {
-    estado.reservas = datos.reservas || {};
+  const aplicarReportes = (datos) => {
+    estado.reportes = datos.reportes || {};
     estado.mia = datos.mia || null;
   };
 
   const refrescar = async () => {
     try {
-      const [yo, reservas] = await Promise.all([api("GET", "/api/yo"), api("GET", "/api/reservas")]);
+      const [yo, reportes] = await Promise.all([api("GET", "/api/yo"), api("GET", "/api/reportes")]);
       estado.disponible = true;
       estado.usuario = yo.usuario;
-      aplicarReservas(reservas);
+      aplicarReportes(reportes);
     } catch (e) {
       if (e.estado === undefined || e.estado === 503) {
         estado.disponible = false; // sin servidor (p. ej. abierto como archivo) o sin base de datos
         estado.usuario = null;
-        estado.reservas = {};
+        estado.reportes = {};
         estado.mia = null;
       }
     }
     avisar();
   };
 
-  // horas: de 1 a 4 (el servidor usa 2 si no se indica). La reserva empieza ahora.
-  const reservar = async (mesa, horas) => {
+  // horas: de 1 a 4 (el servidor usa 2 si no se indica). El reporte empieza ahora.
+  const reportar = async (mesa, horas) => {
     try {
-      aplicarReservas(await api("POST", "/api/reservas", { mesa, horas }));
+      aplicarReportes(await api("POST", "/api/reportes", { mesa, horas }));
       avisar();
     } catch (e) {
       await refrescar(); // por si otra persona se adelantó
@@ -94,7 +94,7 @@ const Cuenta = (() => {
 
   const liberar = async (mesa) => {
     try {
-      aplicarReservas(await api("DELETE", `/api/reservas/${encodeURIComponent(mesa)}`));
+      aplicarReportes(await api("DELETE", `/api/reportes/${encodeURIComponent(mesa)}`));
       avisar();
     } catch (e) {
       await refrescar();
@@ -110,18 +110,18 @@ const Cuenta = (() => {
     }
   };
 
-  // Hora de fin de la reserva de una mesa (Date) o null.
+  // Hora de fin del reporte de una mesa (Date) o null.
   const hastaMesa = (id) => {
-    const r = estado.reservas[id];
+    const r = estado.reportes[id];
     return r && r.hasta ? new Date(r.hasta) : null;
   };
 
-  // "libre" | "reservada" | "mia" | "desconocido" (sin servidor)
+  // "libre" | "reportada" | "mia" | "desconocido" (sin servidor)
   const estadoMesa = (id) => {
     if (estado.disponible !== true) return "desconocido";
-    const r = estado.reservas[id];
+    const r = estado.reportes[id];
     if (!r) return "libre";
-    return r.mia ? "mia" : "reservada";
+    return r.mia ? "mia" : "reportada";
   };
 
   /* ---------- Diálogo de acceso ---------- */
@@ -209,7 +209,7 @@ const Cuenta = (() => {
     }
   });
 
-  /* ---------- Actualización periódica (ver reservas de otras personas) ---------- */
+  /* ---------- Actualización periódica (ver reportes de otras personas) ---------- */
 
   const iniciar = () => {
     refrescar();
@@ -221,5 +221,5 @@ const Cuenta = (() => {
     });
   };
 
-  return { estado, suscribir, refrescar, reservar, liberar, salir, estadoMesa, hastaMesa, abrirDialogo, iniciar };
+  return { estado, suscribir, refrescar, reportar, liberar, salir, estadoMesa, hastaMesa, abrirDialogo, iniciar };
 })();
